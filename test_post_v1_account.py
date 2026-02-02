@@ -1,11 +1,13 @@
+from pprint import pprint
+from json import loads
+
 import requests
 
 
 def test_post_v1_account():
-    login = "tele_test_3"
+    login = "tele_test_10"
     email = f"{login}@mail.com"
     password = "12345678"
-
 
     # Регистрация пользователя
     json_data = {
@@ -14,10 +16,9 @@ def test_post_v1_account():
         'password': password,
     }
 
-
     response = requests.post('http://185.185.143.231:5051/v1/account', json=json_data)
     print(response.status_code)
-    print(response.text)
+    assert response.status_code == 201, f"Пользователь не был создан {response.text}"
 
     # Получить письма из почтового ящика
     params = {
@@ -25,17 +26,26 @@ def test_post_v1_account():
     }
     response = requests.get('http://185.185.143.231:5025/api/v2/messages', params=params, verify=False)
     print(response.status_code)
-    print(response.text)
+    assert response.status_code == 200, "Письмо не получено"
 
+    token = None
     # Получить активационный токен
+    for item in response.json()['items']:
+        user_data = loads(item['Content']['Body'])
+        user_login = user_data["Login"]
+
+        if user_login == login:
+            print(f"Login {user_login}")
+            token = user_data.get("ConfirmationLinkUrl").split("/")[-1]
+
+    assert token is not None, f"Токен для пользователя {login} не был получен"
 
     # Активация пользователя
-
-    response = requests.put('http://185.185.143.231:5051/v1/account/10af8997-6b3a-41b5-a975-c514b320f063')
+    response = requests.put(f"http://185.185.143.231:5051/v1/account/{token}")
     print(response.status_code)
-    print(response.text)
-    # Авторизация
+    assert response.status_code == 200, "Пользователь не активирован"
 
+    # Авторизация
     json_data = {
         'login': login,
         'password': password,
@@ -44,4 +54,5 @@ def test_post_v1_account():
 
     response = requests.post('http://185.185.143.231:5051/v1/account/login', json=json_data)
     print(response.status_code)
-    print(response.text)
+    assert response.status_code == 200, "Пользователь не авторизован"
+
