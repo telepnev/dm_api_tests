@@ -21,10 +21,6 @@ def test_put_v1_account_email():
 
     new_email = f"updated_{email}"
 
-    print(login)
-    print(email)
-    print(password)
-
     # Регистрируемся
 
     json_data = {
