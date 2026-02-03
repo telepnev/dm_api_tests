@@ -6,7 +6,7 @@ class MailhogApi:
         self.host = host
         self.headers = headers
 
-    def get_api_v2_messages(self, limit=50):
+    def get_api_v2_messages(self, limit=20):
         """
         Get users emails
         :return:
