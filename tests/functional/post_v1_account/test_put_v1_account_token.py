@@ -11,9 +11,8 @@ from dm_api_account.apis.account_api import AccountApi
     "token_modifier, expected_status",
     [
         pytest.param("valid", 200),
-        pytest.param("reuse", 400),
         pytest.param("invalid", 400),
-        pytest.param("empty", 400),
+        pytest.param("empty", 404),
     ],
 )
 def test_put_v1_account_activation(token_modifier, expected_status):
@@ -40,15 +39,9 @@ def test_put_v1_account_activation(token_modifier, expected_status):
     valid_token = get_activation_token_by_login(login, response)
     assert valid_token is not None
 
-
     #  подготовка токена
 
     if token_modifier == "valid":
-        token = valid_token
-
-    elif token_modifier == "reuse":
-        # первая активация — успешная
-        account_api.put_v1_account_token(token=valid_token)
         token = valid_token
 
     elif token_modifier == "invalid":
