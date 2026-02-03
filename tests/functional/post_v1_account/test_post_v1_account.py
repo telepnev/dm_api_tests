@@ -1,4 +1,5 @@
 from json import loads
+from faker import Faker
 
 from dm_api_account.apis.account_api import AccountApi
 from dm_api_account.apis.login_api import LoginApi
@@ -6,13 +7,16 @@ from api_mailhog.apis.mailhog_api import MailhogApi
 
 
 def test_post_v1_account():
-    login = "tele_test_15"
-    email = f"{login}@mail.com"
-    password = "12345678"
-
     account_api = AccountApi(host="http://185.185.143.231:5051")
     login_api = LoginApi(host="http://185.185.143.231:5051")
     mailhog_api = MailhogApi(host="http://185.185.143.231:5025")
+
+    faker = Faker()
+    login = faker.name().replace(" ", "")
+    email = f"{login}@mail.com"
+    password = "12345678"
+
+
 
     # Регистрация пользователя
     json_data = {
