@@ -35,7 +35,7 @@ structlog.configure(
 def test_post_v1_account_parametrized(login, email, password, expected_status):
     faker = Faker()
 
-    dm_api_configuration = DmApiConfiguration(host="http://185.185.143.231:5051", disable_logs=True)
+    dm_api_configuration = DmApiConfiguration(host="http://185.185.143.231:5051", disable_logs=False)
     mailhog_configuration = MailhogConfiguration(host="http://185.185.143.231:5025", disable_logs=True)
 
     account = DmApiAccount(configuration=dm_api_configuration)
