@@ -1,8 +1,20 @@
-import pytest
 from faker import Faker
-
 from dm_api_account.apis.account_api import AccountApi
+from restclient.configuration import Configuration as DmApiConfiguration
 
+import pytest
+import structlog
+
+structlog.configure(
+    processors=[
+        structlog.processors.JSONRenderer(
+            indent=4,
+            ensure_ascii=True,
+            # sort_keys=True,
+            # separators=(',', ':')
+        )
+    ]
+)
 
 
 @pytest.mark.parametrize(
@@ -12,13 +24,14 @@ from dm_api_account.apis.account_api import AccountApi
         ("valid_user", "valid_user@mail.com", "123456", 201),
 
         # Negative
-        ("", "user@mail.com", "123456", 400),                # пустой login
-        ("user2", "invalid-email", "123456", 400),           # невалидный email
-        ("user3", "user3@mail.com", "123", 400),             # короткий пароль
+        ("", "user@mail.com", "123456", 400),  # пустой login
+        ("user2", "invalid-email", "123456", 400),  # невалидный email
+        ("user3", "user3@mail.com", "123", 400),  # короткий пароль
     ],
 )
 def test_post_v1_account_parametrized(login, email, password, expected_status):
-    account_api = AccountApi(host="http://185.185.143.231:5051")
+    dm_api_configuration = DmApiConfiguration(host="http://185.185.143.231:5051", disable_logs=False)
+    account_api = AccountApi(configuration=dm_api_configuration)
 
     faker = Faker()
 
@@ -35,11 +48,4 @@ def test_post_v1_account_parametrized(login, email, password, expected_status):
     }
 
     response = account_api.post_v1_account(json_data=json_data)
-
     assert response.status_code == expected_status, response.text
-
-
-
-
-
-
