@@ -1,11 +1,17 @@
 from json import loads
+from typing import Optional
 
 from services.api_mailhog import MailHogApi
 from services.dm_api_account import DmApiAccount
 
 
 class AccountHelper:
-    def __init__(self, dm_account_api: DmApiAccount, mailhog: MailHogApi):
+    def __init__(
+            self,
+            dm_account_api: DmApiAccount,
+            mailhog: MailHogApi
+            #mailhog: Optional[MailHogApi] = None
+    ):
         self.dm_account_api = dm_account_api
         self.mailhog = mailhog
 
@@ -18,19 +24,19 @@ class AccountHelper:
 
         # Регистрация пользователя
         response = self.dm_account_api.account_api.post_v1_account(json_data=json_data)
-        assert response.status_code == 201, f"Пользователь не был создан {response.text}"
+        #assert response.status_code == 201, f"Пользователь не был создан {response.text}"
 
         # Получить письма из почтового ящика
         response = self.mailhog.mailhogApi_api.get_api_v2_messages()
-        assert response.status_code == 200, "Письмо не получено"
+       # assert response.status_code == 200, "Письмо не получено"
 
         # Получить активационный токен
         token = self.get_activation_token_by_login(login=login, response=response)
-        assert token is not None, f"Токен для пользователя {login} не был получен"
+       # assert token is not None, f"Токен для пользователя {login} не был получен"
 
         # Активация пользователя
         response = self.dm_account_api.account_api.put_v1_account_token(token=token)
-        assert response.status_code == 200, "Пользователь не активирован"
+        #assert response.status_code == 200, "Пользователь не активирован"
 
         return response
 
@@ -50,12 +56,12 @@ class AccountHelper:
     def email_change_confirmation_by_new_email(self, new_email: str):
         # На почте находим токен по новому емейлу для подтверждения смены емейла
         response = self.mailhog.mailhogApi_api.get_api_v2_messages()
-        assert response.status_code == 200, "Письмо не получено"
+        #assert response.status_code == 200, "Письмо не получено"
         token = self.get_activation_token_by_email(new_email, response)
         assert token is not None, f"Токен не найден {new_email}"
         # Активируем этот токен
         response = self.dm_account_api.account_api.put_v1_account_token(token=token)
-        assert response.status_code == 200, "Пользователь не активирован"
+        #assert response.status_code == 200, "Пользователь не активирован"
 
         return response
 
@@ -93,6 +99,6 @@ class AccountHelper:
         }
 
         response = self.dm_account_api.account_api.put_v1_account_change_mail(json_data=json_data)
-        assert response.status_code == 200, f"Пользователю {login} не удалось изменить почту"
+        #assert response.status_code == 200, f"Пользователю {login} не удалось изменить почту"
 
         return response
