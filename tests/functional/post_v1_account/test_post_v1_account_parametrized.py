@@ -1,14 +1,13 @@
 from json import loads
+
+import pytest
+import structlog
 from faker import Faker
 
-from dm_api_account.apis.account_api import AccountApi
-from dm_api_account.apis.login_api import LoginApi
-from api_mailhog.apis.mailhog_api import MailhogApi
-from restclient.configuration import Configuration as MailhogConfiguration
 from restclient.configuration import Configuration as DmApiConfiguration
-
-import structlog
-import pytest
+from restclient.configuration import Configuration as MailhogConfiguration
+from services.api_mailhog import MailHogApi
+from services.dm_api_account import DmApiAccount
 
 structlog.configure(
     processors=[
@@ -33,9 +32,8 @@ def test_post_v1_account_parametrized_flow(activate_user, expected_login_status)
     dm_api_configuration = DmApiConfiguration(host="http://185.185.143.231:5051", disable_logs=False)
     mailhog_configuration = MailhogConfiguration(host="http://185.185.143.231:5025", disable_logs=True)
 
-    account_api = AccountApi(configuration=dm_api_configuration)
-    login_api = LoginApi(configuration=dm_api_configuration)
-    mailhog_api = MailhogApi(configuration=mailhog_configuration)
+    account = DmApiAccount(configuration=dm_api_configuration)
+    mailhog = MailHogApi(configuration=mailhog_configuration)
 
     faker = Faker()
     login = faker.name().replace(" ", "")
@@ -43,7 +41,7 @@ def test_post_v1_account_parametrized_flow(activate_user, expected_login_status)
     password = "12345678"
 
     # регистрация
-    response = account_api.post_v1_account(json_data={
+    response = account.account_api.post_v1_account(json_data={
         "login": login,
         "email": email,
         "password": password,
@@ -51,7 +49,7 @@ def test_post_v1_account_parametrized_flow(activate_user, expected_login_status)
     assert response.status_code == 201, "Пользователь не был создан"
 
     # получить письмо
-    response = mailhog_api.get_api_v2_messages()
+    response = mailhog.mailhogApi_api.get_api_v2_messages()
     assert response.status_code == 200, "Письмо не получено"
 
     token = get_activation_token_by_login(login, response)
@@ -59,11 +57,11 @@ def test_post_v1_account_parametrized_flow(activate_user, expected_login_status)
 
     #  активация
     if activate_user:
-        response = account_api.put_v1_account_token(token=token)
+        response = account.account_api.put_v1_account_token(token=token)
         assert response.status_code == 200, "Пользователь не активирован"
 
     # авторизация
-    response = login_api.post_v1_account_login(json_data={
+    response = account.login_api.post_v1_account_login(json_data={
         "login": login,
         "password": password,
         "rememberMe": True,

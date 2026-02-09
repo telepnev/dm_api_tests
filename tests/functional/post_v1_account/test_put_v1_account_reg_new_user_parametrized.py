@@ -1,9 +1,9 @@
-from faker import Faker
-from dm_api_account.apis.account_api import AccountApi
-from restclient.configuration import Configuration as DmApiConfiguration
-
 import pytest
 import structlog
+from faker import Faker
+
+from restclient.configuration import Configuration as DmApiConfiguration
+from services.dm_api_account import DmApiAccount
 
 structlog.configure(
     processors=[
@@ -31,7 +31,7 @@ structlog.configure(
 )
 def test_post_v1_account_parametrized(login, email, password, expected_status):
     dm_api_configuration = DmApiConfiguration(host="http://185.185.143.231:5051", disable_logs=False)
-    account_api = AccountApi(configuration=dm_api_configuration)
+    account = DmApiAccount(configuration=dm_api_configuration)
 
     faker = Faker()
 
@@ -47,5 +47,5 @@ def test_post_v1_account_parametrized(login, email, password, expected_status):
         "password": password,
     }
 
-    response = account_api.post_v1_account(json_data=json_data)
+    response = account.account_api.post_v1_account(json_data=json_data)
     assert response.status_code == expected_status, response.text
