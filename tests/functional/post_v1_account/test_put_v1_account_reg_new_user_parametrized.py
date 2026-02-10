@@ -45,8 +45,8 @@ def test_post_v1_account_parametrized(login, email, password, expected_status):
 
     # Генерируем уникальные данные ТОЛЬКО для позитивного кейса
     if expected_status == 200:
-        login = f"{login}_{faker.name().replace(" ", "")}"
-        email = f"{faker.name().replace(" ", "")}_{email}"
+        login = f"{login}_{faker.name().replace(' ', '')}"
+        email = f"{faker.name().replace(' ', '')}_{email}"
 
     response = account_helper.register_new_user(login=login, email=email, password=password)
     assert response.status_code == expected_status
