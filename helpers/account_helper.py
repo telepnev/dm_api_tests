@@ -1,5 +1,4 @@
 from json import loads
-from typing import Optional
 
 from services.api_mailhog import MailHogApi
 from services.dm_api_account import DmApiAccount

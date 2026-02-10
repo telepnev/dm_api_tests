@@ -23,10 +23,10 @@ structlog.configure(
 @pytest.mark.parametrize(
     "login, email, password, expected_status",
     [
-        # ✅ Positive
+        # Positive
         ("valid_user", "valid_user@mail.com", "123456", 200),
 
-        # ❌ Negative
+        # Negative , пока хватит ...
         ("", "user@mail.com", "123456", 400),  # пустой login
         ("user2", "invalid-email", "123456", 400),  # невалидный email
         ("user3", "user3@mail.com", "123", 400),  # короткий пароль
