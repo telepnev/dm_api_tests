@@ -50,3 +50,6 @@ def test_post_v1_account_parametrized(login, email, password, expected_status):
 
     response = account_helper.register_new_user(login=login, email=email, password=password)
     assert response.status_code == expected_status
+
+    # cgtwfkmyj lkallajd;JA;SJD;
+    assert response.status_code == expected_status
