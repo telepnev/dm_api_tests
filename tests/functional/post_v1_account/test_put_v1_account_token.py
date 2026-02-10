@@ -1,10 +1,23 @@
 from json import loads
-
-import pytest
 from faker import Faker
-
 from api_mailhog.apis.mailhog_api import MailhogApi
 from dm_api_account.apis.account_api import AccountApi
+from restclient.configuration import Configuration as MailhogConfiguration
+from restclient.configuration import Configuration as DmApiConfiguration
+
+import pytest
+import structlog
+
+structlog.configure(
+    processors=[
+        structlog.processors.JSONRenderer(
+            indent=4,
+            ensure_ascii=True,
+            # sort_keys=True,
+            # separators=(',', ':')
+        )
+    ]
+)
 
 
 @pytest.mark.parametrize(
@@ -16,8 +29,11 @@ from dm_api_account.apis.account_api import AccountApi
     ],
 )
 def test_put_v1_account_activation(token_modifier, expected_status):
-    account_api = AccountApi(host="http://185.185.143.231:5051")
-    mailhog_api = MailhogApi(host="http://185.185.143.231:5025")
+    dm_api_configuration = DmApiConfiguration(host="http://185.185.143.231:5051", disable_logs=False)
+    mailhog_configuration = MailhogConfiguration(host="http://185.185.143.231:5025", disable_logs=True)
+
+    account_api = AccountApi(configuration=dm_api_configuration)
+    mailhog_api = MailhogApi(configuration=mailhog_configuration)
 
     faker = Faker()
     login = faker.name().replace(" ", "")
@@ -25,7 +41,6 @@ def test_put_v1_account_activation(token_modifier, expected_status):
     password = "12345678"
 
     #  регистрация
-
     response = account_api.post_v1_account(json_data={
         "login": login,
         "email": email,
@@ -40,21 +55,17 @@ def test_put_v1_account_activation(token_modifier, expected_status):
     assert valid_token is not None
 
     #  подготовка токена
-
     if token_modifier == "valid":
         token = valid_token
-
     elif token_modifier == "invalid":
         token = "invalid-token-123"
-
     elif token_modifier == "empty":
         token = ""
 
     #  активация
-
     response = account_api.put_v1_account_token(token=token)
-
     assert response.status_code == expected_status
+
 
 def get_activation_token_by_login(login, response):
     token = None
