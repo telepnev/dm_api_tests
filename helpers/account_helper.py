@@ -1,13 +1,16 @@
 import time
+from functools import wraps
 from json import loads
 
-from pygments.lexers.sql import do_re
+from tenacity import stop_after_attempt, wait_fixed
 
 from services.api_mailhog import MailHogApi
 from services.dm_api_account import DmApiAccount
 
-import time
-from functools import wraps
+
+def retry_if_result_none(result):
+    """Return True if we should retry (in this case when result is None), False otherwise"""
+    return result is None
 
 
 def retry(retries: int = 3, delay: int = 1, exceptions: tuple = (Exception,)):
@@ -71,6 +74,10 @@ class AccountHelper:
         return response
 
     @retry(retries=5, delay=5)
+    # старье
+    # @retry(stop_max_attempt_number=5,retry_on_result=retry_if_result_none, wait_fixed=1000)
+    # новое
+    #@retry(stop=stop_after_attempt(3), wait=wait_fixed(1))
     def get_activation_token_by_login(self, login):
         token = None
 
