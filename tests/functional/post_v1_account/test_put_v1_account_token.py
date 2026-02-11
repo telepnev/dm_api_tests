@@ -45,12 +45,15 @@ def test_put_v1_account_activation(token_modifier, expected_status):
     #  регистрация
     response = account_helper.register_new_user(login=login, email=email, password=password)
     assert response.status_code == 200
+
     # нужен ли отдельный метод?? И где его оставить и как сделать
     # получение списка писем
-    response = mailhog.mailhogApi_api.get_api_v2_messages()
-    assert response.status_code == 200
+    # response = mailhog.mailhogApi_api.get_api_v2_messages()
+    # assert response.status_code == 200
+    #
+    # valid_token = account_helper.get_activation_token_by_login(login=login, response=response)
 
-    valid_token = account_helper.get_activation_token_by_login(login=login, response=response)
+    valid_token = account_helper.get_activation_token_by_login(login=login)
     assert valid_token is not None
 
     #  подготовка токена
