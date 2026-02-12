@@ -5,6 +5,9 @@ pip install faker
 pip install structlog  # для красивых и читабельных логов
 pip install curlify    # для создания curl, удобно бросить в разраба курл
 
+pip install retrying # старая библиотека, уже не поддерживается 
+pip install tenacity # современная альтернатива !!!!
+
 
 
 
