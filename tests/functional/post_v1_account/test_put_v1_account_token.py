@@ -1,12 +1,12 @@
-from json import loads
-from faker import Faker
-from api_mailhog.apis.mailhog_api import MailhogApi
-from dm_api_account.apis.account_api import AccountApi
-from restclient.configuration import Configuration as MailhogConfiguration
-from restclient.configuration import Configuration as DmApiConfiguration
-
 import pytest
 import structlog
+from faker import Faker
+
+from helpers.account_helper import AccountHelper
+from restclient.configuration import Configuration as DmApiConfiguration
+from restclient.configuration import Configuration as MailhogConfiguration
+from services.api_mailhog import MailHogApi
+from services.dm_api_account import DmApiAccount
 
 structlog.configure(
     processors=[
@@ -29,11 +29,13 @@ structlog.configure(
     ],
 )
 def test_put_v1_account_activation(token_modifier, expected_status):
-    dm_api_configuration = DmApiConfiguration(host="http://185.185.143.231:5051", disable_logs=False)
+    dm_api_configuration = DmApiConfiguration(host="http://185.185.143.231:5051", disable_logs=True)
     mailhog_configuration = MailhogConfiguration(host="http://185.185.143.231:5025", disable_logs=True)
 
-    account_api = AccountApi(configuration=dm_api_configuration)
-    mailhog_api = MailhogApi(configuration=mailhog_configuration)
+    account = DmApiAccount(configuration=dm_api_configuration)
+    mailhog = MailHogApi(configuration=mailhog_configuration)
+
+    account_helper = AccountHelper(dm_account_api=account, mailhog=mailhog)
 
     faker = Faker()
     login = faker.name().replace(" ", "")
@@ -41,17 +43,14 @@ def test_put_v1_account_activation(token_modifier, expected_status):
     password = "12345678"
 
     #  регистрация
-    response = account_api.post_v1_account(json_data={
-        "login": login,
-        "email": email,
-        "password": password,
-    })
-    assert response.status_code == 201
-
-    response = mailhog_api.get_api_v2_messages()
+    response = account_helper.register_new_user(login=login, email=email, password=password)
+    assert response.status_code == 200
+    # нужен ли отдельный метод?? И где его оставить и как сделать
+    # получение списка писем
+    response = mailhog.mailhogApi_api.get_api_v2_messages()
     assert response.status_code == 200
 
-    valid_token = get_activation_token_by_login(login, response)
+    valid_token = account_helper.get_activation_token_by_login(login=login, response=response)
     assert valid_token is not None
 
     #  подготовка токена
@@ -63,17 +62,6 @@ def test_put_v1_account_activation(token_modifier, expected_status):
         token = ""
 
     #  активация
-    response = account_api.put_v1_account_token(token=token)
+    response = account.account_api.put_v1_account_token(token=token)
     assert response.status_code == expected_status
 
-
-def get_activation_token_by_login(login, response):
-    token = None
-    for item in response.json()['items']:
-        user_data = loads(item['Content']['Body'])
-        user_login = user_data["Login"]
-
-        if user_login == login:
-            print(f"Login {user_login}")
-            token = user_data.get("ConfirmationLinkUrl").split("/")[-1]
-    return token
