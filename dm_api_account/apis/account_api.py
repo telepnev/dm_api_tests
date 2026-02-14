@@ -17,6 +17,17 @@ class AccountApi(RestClient):
         )
         return response
 
+    def get_v1_account(self, **kwargs):
+        """
+        Get current user
+        :return:
+        """
+        response = self.get(
+            path=f'/v1/account',
+            **kwargs
+        )
+        return response
+
     def put_v1_account_token(self, token):
         """
         Activate registered user
@@ -32,7 +43,7 @@ class AccountApi(RestClient):
         )
         return response
 
-    def put_v1_account_change_mail(self,json_data):
+    def put_v1_account_change_mail(self, json_data):
         """
         Change registered user email
         :param json_data:

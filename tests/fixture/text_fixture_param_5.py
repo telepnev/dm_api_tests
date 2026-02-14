@@ -3,7 +3,11 @@ from pathlib import Path
 import pytest
 
 
-@pytest.mark.parametrize("file_name", ["file_name_1.txt", "file_name_2.txt", "file_name_3.txt"])
+@pytest.mark.parametrize("file_name", [
+    "file_name_1.txt",
+    "file_name_2.txt",
+    "file_name_3.txt"
+])
 def test_text_write(file_name):
     # пишем текст
     with open(file_name, "w") as file:

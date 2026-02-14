@@ -52,5 +52,3 @@ def test_post_v1_account_parametrized_flow(activate_user, expected_login_status)
     account_helper.user_login(
         login=login,
         password=password)
-
-

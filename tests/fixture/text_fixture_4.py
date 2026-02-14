@@ -14,9 +14,9 @@ from pathlib import Path
 🔥 5. Тяжёлые ресурсы (docker, сервисы)
 """
 
+
 @pytest.fixture(scope="session")
 def textfile():
-
     # имитация длительности
     time.sleep(1)
     # получаем текущее дату и время
@@ -32,15 +32,21 @@ def textfile():
     # удаляем файл
     Path(file_name).unlink()
 
+
 def test_text_write(textfile):
     # пишем текст
     textfile.write("hello world - test_text_write")
+
+
 def test_text_write_2(textfile):
     # пишем текст
     textfile.write("hello world - test_text_write_2")
+
+
 def test_text_write_3(textfile):
     # пишем текст
     textfile.write("hello world - test_text_write_3")
+
 
 """
 в нашем случаи все тесты записали результат в один файл

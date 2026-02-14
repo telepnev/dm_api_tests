@@ -6,5 +6,6 @@ def textfile(request):
     file = open(request.param, "w")
     return file
 
+
 def test_parametrized_fixture(textfile):
     textfile.write("hello world from parametrized_fixture")

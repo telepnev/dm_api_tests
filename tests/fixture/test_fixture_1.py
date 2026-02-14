@@ -6,7 +6,6 @@ import pytest
 
 @pytest.fixture
 def textfile():
-
     # имитация длительности
     time.sleep(1)
     # получаем текущее дату и время
@@ -17,6 +16,7 @@ def textfile():
     file_name = f"{date}.txt"
     file = open(file_name, "w")
     return file
+
 
 def test_text_write(textfile):
     # пишем текст

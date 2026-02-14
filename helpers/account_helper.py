@@ -73,11 +73,22 @@ class AccountHelper:
 
         return response
 
+    def auth_client(self, login: str, password: str):
+        response = self.dm_account_api.login_api.post_v1_account_login(
+            json_data= {"login":login, "password":password})
+        token = {
+            "x-dm-auth-token": response.headers["x-dm-auth-token"],
+        }
+        #устанавливаем в headers токен
+        self.dm_account_api.account_api.set_headers(token)
+        # логинемся
+        self.dm_account_api.login_api.set_headers(token)
+
     @retry(retries=5, delay=5)
     # старье
     # @retry(stop_max_attempt_number=5,retry_on_result=retry_if_result_none, wait_fixed=1000)
     # новое
-    #@retry(stop=stop_after_attempt(3), wait=wait_fixed(1))
+    # @retry(stop=stop_after_attempt(3), wait=wait_fixed(1))
     def get_activation_token_by_login(self, login):
         token = None
 

@@ -4,11 +4,8 @@ import pytest
 from datetime import datetime
 from pathlib import Path
 
-
-
 @pytest.fixture
 def textfile():
-
     # имитация длительности
     time.sleep(1)
     # получаем текущее дату и время
@@ -23,6 +20,7 @@ def textfile():
     file.close()
     # удаляем файл
     Path(file_name).unlink()
+
 
 def test_text_write(textfile):
     # пишем текст

@@ -1,6 +1,4 @@
-
-def test_post_v1_account(account_helper,prepare_user):
-
+def test_post_v1_account(account_helper, prepare_user):
     account_helper.register_new_user(
         login=prepare_user.login,
         email=prepare_user.email,

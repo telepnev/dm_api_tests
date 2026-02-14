@@ -21,24 +21,41 @@ structlog.configure(
     ]
 )
 
-@pytest.fixture
+
+@pytest.fixture(scope="session")
 def mailhog_api():
     mailhog_configuration = MailhogConfiguration(host="http://185.185.143.231:5025", disable_logs=True)
     mailhog_client = MailHogApi(configuration=mailhog_configuration)
     return mailhog_client
 
-@pytest.fixture
+
+@pytest.fixture(scope="session")
 def account_api():
     dm_api_configuration = DmApiConfiguration(host="http://185.185.143.231:5051", disable_logs=False)
     account = DmApiAccount(configuration=dm_api_configuration)
     return account
 
-@pytest.fixture
+
+@pytest.fixture(scope="session")
 def account_helper(account_api, mailhog_api):
     account_helper = AccountHelper(dm_account_api=account_api, mailhog=mailhog_api)
     return account_helper
 
-@pytest.fixture
+
+@pytest.fixture(scope="session")
+def auth_account_helper(mailhog_api):
+    dm_api_configuration = DmApiConfiguration(host="http://185.185.143.231:5051", disable_logs=False)
+    account = DmApiAccount(configuration=dm_api_configuration)
+    account_helper = AccountHelper(dm_account_api=account, mailhog=mailhog_api)
+    account_helper.auth_client(
+        login = "KaraChavez",
+        password = "12345678"
+
+    )
+    return account_helper
+
+
+@pytest.fixture(scope="session")
 def prepare_user():
     faker = Faker()
     login = faker.name().replace(" ", "")
@@ -49,4 +66,3 @@ def prepare_user():
     User = namedtuple("User", ["login", "email", "password"])
     user = User(login=login, email=email, password=password)
     return user
-
