@@ -16,3 +16,18 @@ class LoginApi(RestClient):
             json=json_data
         )
         return response
+
+    def delete_v1_account_login(self, token):
+        """
+        Logout as current user
+        :return:
+        """
+        headers = {
+            'accept': 'text/plain',
+            'X-Dm-Auth-Token': f'{token}',
+        }
+        response = self.delete(
+            path=f'/v1/account/login',
+            headers=headers
+        )
+        return response
