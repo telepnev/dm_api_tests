@@ -6,4 +6,3 @@ class MailHogApi:
     def __init__(self, configuration: Configuration):
         self.configuration = configuration
         self.mailhogApi_api = MailhogApi(configuration=configuration)
-

@@ -67,4 +67,3 @@ def test_put_v1_account_activation(token_modifier, expected_status):
     #  активация
     response = account.account_api.put_v1_account_token(token=token)
     assert response.status_code == expected_status
-

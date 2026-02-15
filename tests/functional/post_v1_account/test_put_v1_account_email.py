@@ -72,4 +72,3 @@ def test_put_v1_account_email():
         password=password
     )
     assert response.status_code == 200, "Пользователь не авторизован"
-
