@@ -31,3 +31,18 @@ class LoginApi(RestClient):
             headers=headers
         )
         return response
+
+    def delete_v1_account_login_all(self, token):
+        """
+        Logout from every device
+        :return:
+        """
+        headers = {
+            'accept': 'text/plain',
+            'X-Dm-Auth-Token': f'{token}',
+        }
+        response = self.delete(
+            path=f'/v1/account/login/all',
+            headers=headers
+        )
+        return response

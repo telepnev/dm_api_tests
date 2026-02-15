@@ -87,6 +87,9 @@ class AccountHelper:
     def logout_client(self, token: str):
         self.dm_account_api.login_api.delete_v1_account_login(token)
 
+    def logout_client_all(self, token: str):
+        self.dm_account_api.login_api.delete_v1_account_login_all(token)
+
     def change_password(self,
                         login: str,
                         password: str,
