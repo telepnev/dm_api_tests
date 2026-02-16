@@ -190,6 +190,14 @@ class AccountHelper:
 
         return token
 
+    def get_current_user(self):
+        response = self.dm_account_api.account_api.get_v1_account()
+        return response
+
+    def set_token(self, token):
+        response = self.dm_account_api.login_api.delete_v1_account_login(token)
+        return response
+
     # Изменение почты
     def user_change_email(self, login: str, password: str, new_email: str):
         # Меняем емейл

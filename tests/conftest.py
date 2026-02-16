@@ -32,7 +32,7 @@ def mailhog_api():
     return mailhog_client
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def account_api():
     dm_api_configuration = DmApiConfiguration(
         host="http://185.185.143.231:5051",
@@ -42,7 +42,7 @@ def account_api():
     return account
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def account_helper(account_api, mailhog_api):
     account_helper = AccountHelper(
         dm_account_api=account_api,
@@ -52,7 +52,7 @@ def account_helper(account_api, mailhog_api):
     return account_helper
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def auth_account_helper(mailhog_api):
     dm_api_configuration = DmApiConfiguration(
         host="http://185.185.143.231:5051",
@@ -72,7 +72,7 @@ def auth_account_helper(mailhog_api):
     return account_helper
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def auth_with_cred_account_helper(mailhog_api):
     dm_api_configuration = DmApiConfiguration(
         host="http://185.185.143.231:5051",
@@ -93,8 +93,10 @@ def auth_with_cred_account_helper(mailhog_api):
 
     return _auth
 
+    # def get_current_user
 
-@pytest.fixture
+
+@pytest.fixture(scope="function")
 def prepare_user():
     faker = Faker()
     login = faker.name().replace(" ", "")
