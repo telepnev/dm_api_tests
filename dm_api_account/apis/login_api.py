@@ -1,5 +1,3 @@
-import requests
-
 from restclient.client import RestClient
 
 
@@ -17,32 +15,24 @@ class LoginApi(RestClient):
         )
         return response
 
-    def delete_v1_account_login(self, token):
+    def delete_v1_account_login(self, **kwargs):
         """
         Logout as current user
         :return:
         """
-        headers = {
-            'accept': 'text/plain',
-            'X-Dm-Auth-Token': f'{token}',
-        }
         response = self.delete(
             path=f'/v1/account/login',
-            headers=headers
+            **kwargs
         )
         return response
 
-    def delete_v1_account_login_all(self, token):
+    def delete_v1_account_login_all(self, **kwargs):
         """
         Logout from every device
         :return:
         """
-        headers = {
-            'accept': 'text/plain',
-            'X-Dm-Auth-Token': f'{token}',
-        }
         response = self.delete(
             path=f'/v1/account/login/all',
-            headers=headers
+            **kwargs
         )
         return response

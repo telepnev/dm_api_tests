@@ -2,8 +2,6 @@ import time
 from functools import wraps
 from json import loads
 
-from tenacity import stop_after_attempt, wait_fixed
-
 from services.api_mailhog import MailHogApi
 from services.dm_api_account import DmApiAccount
 
@@ -194,8 +192,22 @@ class AccountHelper:
         response = self.dm_account_api.account_api.get_v1_account()
         return response
 
-    def set_token(self, token):
-        response = self.dm_account_api.login_api.delete_v1_account_login(token)
+    def logout(self, token):
+        response = self.dm_account_api.login_api.delete_v1_account_login(
+            headers={
+                'accept': 'text/plain',
+                'X-Dm-Auth-Token': f'{token}',
+            }
+        )
+        return response
+
+    def logout_all(self, token):
+        response = self.dm_account_api.login_api.delete_v1_account_login_all(
+            headers={
+                'accept': 'text/plain',
+                'X-Dm-Auth-Token': f'{token}',
+            }
+        )
         return response
 
     # Изменение почты
