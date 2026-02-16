@@ -15,24 +15,34 @@ class LoginApi(RestClient):
         )
         return response
 
-    def delete_v1_account_login(self, **kwargs):
+    def delete_v1_account_login(self, token: str | None = None):
         """
         Logout as current user
         :return:
         """
+        if token:
+            headers = {"X-Dm-Auth-Token": token}
+        else:
+            headers = None  # использовать текущие, нифига не менять
+
         response = self.delete(
             path=f'/v1/account/login',
-            **kwargs
+            headers=headers
         )
         return response
 
-    def delete_v1_account_login_all(self, **kwargs):
+    def delete_v1_account_login_all(self, token: str | None = None):
         """
         Logout from every device
         :return:
         """
+        if token:
+            headers = {"X-Dm-Auth-Token": token}
+        else:
+            headers = None  # использовать текущие, нифига не менять
+
         response = self.delete(
-            path=f'/v1/account/login/all',
-            **kwargs
+            path=f'/v1/account/login',
+            headers=headers
         )
         return response
