@@ -60,7 +60,7 @@ class AccountHelper:
         # assert response.status_code == 201, f"Пользователь не был создан {response.text}"
 
         # Получить письма из почтового ящика
-        response = self.mailhog.mailhogApi_api.get_api_v2_messages()
+        response = self.mailhog.mailhog_api.get_api_v2_messages()
         # assert response.status_code == 200, "Письмо не получено"
 
         # Получить активационный токен
@@ -125,7 +125,7 @@ class AccountHelper:
     def get_activation_token_by_login(self, login):
         token = None
         # Получить письма из почтового ящика
-        response = self.mailhog.mailhogApi_api.get_api_v2_messages()
+        response = self.mailhog.mailhog_api.get_api_v2_messages()
 
         for item in response.json()['items']:
             user_data = loads(item['Content']['Body'])
@@ -139,7 +139,7 @@ class AccountHelper:
     def get_conferm_token_by_login(self, login):
         token = None
         # Получить письма из почтового ящика
-        response = self.mailhog.mailhogApi_api.get_api_v2_messages()
+        response = self.mailhog.mailhog_api.get_api_v2_messages()
 
         for item in response.json()['items']:
             user_data = loads(item['Content']['Body'])
@@ -168,7 +168,7 @@ class AccountHelper:
 
     def email_change_confirmation_by_new_email(self, new_email: str):
         # На почте находим токен по новому емейлу для подтверждения смены емейла
-        response = self.mailhog.mailhogApi_api.get_api_v2_messages()
+        response = self.mailhog.mailhog_api.get_api_v2_messages()
         # assert response.status_code == 200, "Письмо не получено"
         token = self.get_activation_token_by_email(new_email, response)
         assert token is not None, f"Токен не найден {new_email}"
