@@ -1,6 +1,4 @@
-
-def test_change_password_v1_account(account_helper, prepare_user, auth_with_cred_account_helper):
-
+def test_change_password_v1_account(account_helper, prepare_user):
     login = prepare_user.login
     password = prepare_user.password
     email = prepare_user.email

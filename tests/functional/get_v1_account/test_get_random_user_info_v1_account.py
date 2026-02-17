@@ -1,4 +1,3 @@
-
 def test_get_v1_account(account_helper, prepare_user, auth_with_cred_account_helper):
     login = prepare_user.login
     password = prepare_user.password
@@ -13,7 +12,7 @@ def test_get_v1_account(account_helper, prepare_user, auth_with_cred_account_hel
 
     # auth
     auth_user = auth_with_cred_account_helper(login, password)
-    response = auth_user.dm_account_api.account_api.get_v1_account()
+    response = auth_user.get_current_user()
 
     # get_current_user
 

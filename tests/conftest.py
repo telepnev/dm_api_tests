@@ -2,6 +2,8 @@ from collections import namedtuple
 
 import pytest
 import structlog
+import uuid
+
 from faker import Faker
 
 from helpers.account_helper import AccountHelper
@@ -99,9 +101,13 @@ def auth_with_cred_account_helper(mailhog_api):
 @pytest.fixture(scope="function")
 def prepare_user():
     faker = Faker()
-    login = faker.name().replace(" ", "")
+
+    unique_id = uuid.uuid4().hex
+
+    login = f"user_{unique_id}"
     email = f"{login}@mail.com"
     password = "12345678"
+
     new_password = faker.password(
         length=10,
         # special_chars=True,
