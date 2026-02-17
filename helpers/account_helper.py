@@ -57,25 +57,27 @@ class AccountHelper:
 
         # Регистрация пользователя
         response = self.dm_account_api.account_api.post_v1_account(json_data=json_data)
-        # assert response.status_code == 201, f"Пользователь не был создан {response.text}"
+        assert response.status_code == 201, f"Пользователь не был создан {response.text}"
 
         # Получить письма из почтового ящика
         response = self.mailhog.mailhog_api.get_api_v2_messages()
-        # assert response.status_code == 200, "Письмо не получено"
+        assert response.status_code == 200, "Письмо не получено"
 
         # Получить активационный токен
+        start_time = time.time()
         token = self.get_activation_token_by_login(login=login)
-        # assert token is not None, f"Токен для пользователя {login} не был получен"
+        end_time = time.time()
+        assert end_time - start_time < 3, "Время активации превышено"
+        assert token is not None, f"Токен для пользователя {login} не был получен"
 
         # Активация пользователя
         response = self.dm_account_api.account_api.put_v1_account_token(token=token)
-        # assert response.status_code == 200, "Пользователь не активирован"
+        assert response.status_code == 200, "Пользователь не активирован"
 
         return response
 
     def auth_client(self, login: str, password: str):
-        response = self.dm_account_api.login_api.post_v1_account_login(
-            json_data={"login": login, "password": password})
+        response = self.user_login(login=login, password=password)
         token = {
             "x-dm-auth-token": response.headers["x-dm-auth-token"],
         }
@@ -156,7 +158,8 @@ class AccountHelper:
         }
 
         response = self.dm_account_api.login_api.post_v1_account_login(json_data=json_data)
-        # assert response.status_code == 200, "Пользователь не авторизован"
+        assert response.status_code == 200, "Пользователь не авторизован"
+        assert response.headers["X-Dm-Auth-Token"], "TOKEN не был получен"
 
         return response
 
