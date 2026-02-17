@@ -5,7 +5,7 @@ from restclient.client import RestClient
 
 class MailhogApi(RestClient):
 
-    def get_api_v2_messages(self, limit=20):
+    def get_api_v2_messages(self, limit=50):
         """
         Get users emails
         :return:

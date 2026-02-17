@@ -2,7 +2,7 @@ import time
 from functools import wraps
 from json import loads
 
-from tenacity import stop_after_attempt, wait_fixed
+from requests import Response
 
 from services.api_mailhog import MailHogApi
 from services.dm_api_account import DmApiAccount
@@ -60,7 +60,7 @@ class AccountHelper:
         # assert response.status_code == 201, f"Пользователь не был создан {response.text}"
 
         # Получить письма из почтового ящика
-        response = self.mailhog.mailhogApi_api.get_api_v2_messages()
+        response = self.mailhog.mailhog_api.get_api_v2_messages()
         # assert response.status_code == 200, "Письмо не получено"
 
         # Получить активационный токен
@@ -73,16 +73,53 @@ class AccountHelper:
 
         return response
 
-    @retry(retries=5, delay=5)
+    def auth_client(self, login: str, password: str):
+        response = self.dm_account_api.login_api.post_v1_account_login(
+            json_data={"login": login, "password": password})
+        token = {
+            "x-dm-auth-token": response.headers["x-dm-auth-token"],
+        }
+        # устанавливаем в headers токен
+        self.dm_account_api.account_api.set_headers(token)
+        # логинемся
+        self.dm_account_api.login_api.set_headers(token)
+
+    def change_password(self,
+                        login: str,
+                        password: str,
+                        email: str,
+                        new_password: str
+                        ):
+        # логинемся
+        response = self.dm_account_api.login_api.post_v1_account_login(
+            json_data={"login": login, "password": password})
+        # инициируем сброс пароля
+        response = self.dm_account_api.account_api.post_v1_account_reset_password(
+            json_data={"login": login, "email": email})
+        assert response.status_code == 200, "Пользователь не смог сбросить пароль"
+        # берем токен из письма
+        token = self.get_conferm_token_by_login(login=login)
+        assert token is not None, "Не смогли получить token"
+
+        # меняем пароль
+        response = self.dm_account_api.account_api.put_v1_account_change_password(
+            json_data={
+                "login": login,
+                "token": token,
+                "oldPassword": password,
+                "newPassword": new_password,
+            })
+        return response
+
+    @retry(retries=5, delay=15)
     # старье
     # @retry(stop_max_attempt_number=5,retry_on_result=retry_if_result_none, wait_fixed=1000)
     # новое
-    #@retry(stop=stop_after_attempt(3), wait=wait_fixed(1))
+    # @retry(stop=stop_after_attempt(3), wait=wait_fixed(1))
     def get_activation_token_by_login(self, login):
         token = None
-
         # Получить письма из почтового ящика
-        response = self.mailhog.mailhogApi_api.get_api_v2_messages()
+        response = self.mailhog.mailhog_api.get_api_v2_messages()
 
         for item in response.json()['items']:
             user_data = loads(item['Content']['Body'])
@@ -91,6 +128,23 @@ class AccountHelper:
             if user_login == login:
                 print(f"Login {user_login}")
                 token = user_data.get("ConfirmationLinkUrl").split("/")[-1]
+        return token
+
+    def get_conferm_token_by_login(self, login):
+        token = None
+        # Получить письма из почтового ящика
+        response = self.mailhog.mailhog_api.get_api_v2_messages()
+
+        for item in response.json()['items']:
+            user_data = loads(item['Content']['Body'])
+            user_login = user_data["Login"]
+
+            if user_login == login:
+                print(f"Login {user_login}")
+                link = user_data.get("ConfirmationLinkUri")
+                if link:
+                    token = link.split("/")[-1]
+                print(f"TOKEN ====================={token}")
         return token
 
     # Авторизация в систему
@@ -108,7 +162,7 @@ class AccountHelper:
 
     def email_change_confirmation_by_new_email(self, new_email: str):
         # На почте находим токен по новому емейлу для подтверждения смены емейла
-        response = self.mailhog.mailhogApi_api.get_api_v2_messages()
+        response = self.mailhog.mailhog_api.get_api_v2_messages()
         # assert response.status_code == 200, "Письмо не получено"
         token = self.get_activation_token_by_email(new_email, response)
         assert token is not None, f"Токен не найден {new_email}"
@@ -129,6 +183,24 @@ class AccountHelper:
                 token = user_data.get("ConfirmationLinkUrl").split("/")[-1]
 
         return token
+
+    def get_current_user(self):
+        response = self.dm_account_api.account_api.get_v1_account()
+        return response
+
+    def logout(self, token: str | None = None, **kwargs) -> Response:
+        headers = kwargs.get('headers') or {}
+        if token:
+            headers.update({"X-Dm-Auth-Token": token})
+        response = self.dm_account_api.login_api.delete_v1_account_login(headers)
+        return response
+
+    def logout_all(self, token: str | None = None, **kwargs) -> Response:
+        headers = kwargs.get('headers') or {}
+        if token:
+            headers.update({"X-Dm-Auth-Token": token})
+        response = self.dm_account_api.login_api.delete_v1_account_login_all(headers)
+        return response
 
     # Изменение почты
     def user_change_email(self, login: str, password: str, new_email: str):
