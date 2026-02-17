@@ -2,6 +2,8 @@ import time
 from functools import wraps
 from json import loads
 
+from requests import Response
+
 from services.api_mailhog import MailHogApi
 from services.dm_api_account import DmApiAccount
 
@@ -82,11 +84,11 @@ class AccountHelper:
         # логинемся
         self.dm_account_api.login_api.set_headers(token)
 
-    def logout_client(self, token: str):
-        self.dm_account_api.login_api.delete_v1_account_login(token)
-
-    def logout_client_all(self, token: str):
-        self.dm_account_api.login_api.delete_v1_account_login_all(token)
+    # def logout_client(self, token: str):
+    #     self.dm_account_api.login_api.delete_v1_account_login(token)
+    #
+    # def logout_client_all(self, token: str):
+    #     self.dm_account_api.login_api.delete_v1_account_login_all(token)
 
     def change_password(self,
                         login: str,
@@ -192,12 +194,18 @@ class AccountHelper:
         response = self.dm_account_api.account_api.get_v1_account()
         return response
 
-    def logout(self, token: str | None = None):
-        response = self.dm_account_api.login_api.delete_v1_account_login(token)
+    def logout(self, token: str | None = None, **kwargs) -> Response:
+        headers = kwargs.get('headers') or {}
+        if token:
+            headers.update({"X-Dm-Auth-Token": token})
+        response = self.dm_account_api.login_api.delete_v1_account_login(headers)
         return response
 
-    def logout_all(self, token: str | None = None):
-        response = self.dm_account_api.login_api.delete_v1_account_login_all(token)
+    def logout_all(self, token: str | None = None, **kwargs) -> Response:
+        headers = kwargs.get('headers') or {}
+        if token:
+            headers.update({"X-Dm-Auth-Token": token})
+        response = self.dm_account_api.login_api.delete_v1_account_login_all(headers)
         return response
 
     # Изменение почты
