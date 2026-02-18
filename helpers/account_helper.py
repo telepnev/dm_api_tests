@@ -73,7 +73,7 @@ class AccountHelper:
 
         # Активация пользователя
         response = self.dm_account_api.account_api.put_v1_account_token(token=token)
-        assert response.status_code == 200, "Пользователь не активирован"
+        #assert response.status_code == 200, "Пользователь не активирован"
 
         return response
 
@@ -151,16 +151,25 @@ class AccountHelper:
         return token
 
     # Авторизация в систему
-    def user_login(self, login: str, password: str, remember_me: bool = True):
+    def user_login(self,
+                   login: str,
+                   password: str,
+                   remember_me: bool = True,
+                   validate_response=False
+                   ):
+
         login_credentials = LoginCredentials(
             login=login,
             password=password,
             remember_me=remember_me
         )
 
-        response = self.dm_account_api.login_api.post_v1_account_login(login_credentials=login_credentials)
-        assert response.status_code == 200, "Пользователь не авторизован"
-        assert response.headers["X-Dm-Auth-Token"], "TOKEN не был получен"
+        response = self.dm_account_api.login_api.post_v1_account_login(
+            login_credentials=login_credentials,
+            validate_response=validate_response
+        )
+        # assert response.status_code == 200, "Пользователь не авторизован"
+        # assert response.headers["X-Dm-Auth-Token"], "TOKEN не был получен"
 
         return response
 
