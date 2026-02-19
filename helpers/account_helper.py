@@ -81,7 +81,12 @@ class AccountHelper:
         response = self.dm_account_api.account_api.put_v1_account_token(token=token)
         # assert response.status_code == 200, "Пользователь не активирован"
 
-        return response
+        model = None
+        if response.status_code == 200:
+            model = UserEnvelope(**response.json())
+
+        return response, model
+
 
     def register_new_user_without_activetion(self, login: str, password: str, email: str):
         registration = Registration(
@@ -222,27 +227,54 @@ class AccountHelper:
         return token
 
     # Авторизация в систему
-    def user_login(self,
-                   login: str,
-                   password: str,
-                   remember_me: bool = True,
-                   validate_response=False
-                   ):
+    # def user_login(self,
+    #                login: str,
+    #                password: str,
+    #                remember_me: bool = True,
+    #                validate_response=False
+    #                ):
+    #
+    #     login_credentials = LoginCredentials(
+    #         login=login,
+    #         password=password,
+    #         remember_me=remember_me
+    #     )
+    #
+    #     response = self.dm_account_api.login_api.post_v1_account_login(
+    #         login_credentials=login_credentials,
+    #         validate_response=validate_response
+    #     )
+    #     # assert response.status_code == 200, "Пользователь не авторизован"
+    #     # assert response.headers["X-Dm-Auth-Token"], "TOKEN не был получен"
+    #
+    #     return response
 
+    def user_login(
+            self,
+            login: str,
+            password: str,
+            remember_me: bool = True
+    ):
         login_credentials = LoginCredentials(
             login=login,
             password=password,
             remember_me=remember_me
         )
 
+        # ВСЕГДА получаем raw Response
         response = self.dm_account_api.login_api.post_v1_account_login(
             login_credentials=login_credentials,
-            validate_response=validate_response
+            validate_response=False
         )
-        # assert response.status_code == 200, "Пользователь не авторизован"
-        # assert response.headers["X-Dm-Auth-Token"], "TOKEN не был получен"
 
-        return response
+        model = None
+        token = None
+
+        if response.status_code == 200:
+            model = UserEnvelope(**response.json())
+            token = response.headers.get("X-Dm-Auth-Token")
+
+        return response, model, token
 
     def email_change_confirmation_by_new_email(self, new_email: str):
         # На почте находим токен по новому емейлу для подтверждения смены емейла

@@ -61,23 +61,6 @@ class AccountApi(RestClient):
 
         return UserDetailsEnvelope.model_validate(response.json())
 
-    # def put_v1_account_token(self, token, validate_response=True):
-    #     """
-    #     Activate registered user
-    #     :param token:
-    #     :return:
-    #     """
-    #     headers = {
-    #         'accept': 'text/plain',
-    #     }
-    #     response = self.put(
-    #         path=f'/v1/account/{token}',
-    #         headers=headers
-    #     )
-    #     if validate_response:
-    #         return UserEnvelope(**response.json())
-    #     return response
-
     def put_v1_account_token(self, token: str):
         headers = {'accept': 'application/json'}
 
@@ -104,3 +87,16 @@ class AccountApi(RestClient):
             json=change_mail.model_dump(exclude_none=True, by_alias=True)
         )
         return response
+
+    # можно удалить
+    def post_v1_account_login(self, login: str, password: str):
+        response = self.post(
+            path="/v1/account/login",
+            json={
+                "login": login,
+                "password": password,
+                "rememberMe": True
+            }
+        )
+        return response
+
