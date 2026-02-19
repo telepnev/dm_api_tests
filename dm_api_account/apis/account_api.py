@@ -69,7 +69,7 @@ class AccountApi(RestClient):
             headers=headers
         )
 
-        return response  # ВСЕГДА raw Response
+        return response
 
     def put_v1_account_change_mail(self, change_mail: ChangeEmail):
         """

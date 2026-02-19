@@ -297,9 +297,7 @@ class AccountHelper:
         auth_token = token or self.token
         headers = {"X-Dm-Auth-Token": auth_token}
 
-        return self.dm_account_api.login_api.delete_v1_account_login_all(
-            headers=headers
-        )
+        return self.dm_account_api.login_api.delete_v1_account_login_all(headers=headers)
 
     # Изменение почты
     def user_change_email(self, login: str, password: str, new_email: str):
