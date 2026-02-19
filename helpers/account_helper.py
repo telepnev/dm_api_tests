@@ -7,8 +7,10 @@ from json import loads, JSONDecodeError
 from requests import Response, JSONDecodeError
 
 from dm_api_account.models.change_email import ChangeEmail
+from dm_api_account.models.change_password import ChangePassword
 from dm_api_account.models.login_credentials import LoginCredentials
 from dm_api_account.models.registration import Registration
+from dm_api_account.models.reset_password import ResetPassword
 from services.api_mailhog import MailHogApi
 from services.dm_api_account import DmApiAccount
 
@@ -92,16 +94,17 @@ class AccountHelper:
 
     def change_password(self,
                         login: str,
-                        password: str,
                         email: str,
+                        password: str,
                         new_password: str
                         ):
         # логинемся
         response = self.dm_account_api.login_api.post_v1_account_login(
-            json_data={"login": login, "password": password})
+            login_credentials=LoginCredentials(login=login, password=password))
         # инициируем сброс пароля
+        reset_password = ResetPassword(login=login, email=email)
         response = self.dm_account_api.account_api.post_v1_account_reset_password(
-            json_data={"login": login, "email": email})
+            reset_password=reset_password)
         assert response.status_code == 200, "Пользователь не смог сбросить пароль"
         # берем токен из письма
         token = self.get_conferm_token_by_login(login=login)
@@ -109,12 +112,12 @@ class AccountHelper:
 
         # меняем пароль
         response = self.dm_account_api.account_api.put_v1_account_change_password(
-            json_data={
-                "login": login,
-                "token": token,
-                "oldPassword": password,
-                "newPassword": new_password,
-            })
+            change_password=ChangePassword(
+                login=login,
+                token=token,
+                old_password=password,
+                new_password=new_password
+            ))
         return response
 
     #  переписать на try , но позже
@@ -296,7 +299,7 @@ class AccountHelper:
         change_mail = ChangeEmail(
             login=login,
             password=password,
-            email= new_email
+            email=new_email
         )
 
         response = self.dm_account_api.account_api.put_v1_account_change_mail(change_mail=change_mail)

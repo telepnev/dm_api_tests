@@ -1,27 +1,22 @@
 from collections import namedtuple
+import sys
+from pathlib import Path
 
 import pytest
-import structlog
 import uuid
 
 from faker import Faker
+
+# Добавляем корень проекта в sys.path, чтобы корректно находить внутренние пакеты
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 from helpers.account_helper import AccountHelper
 from restclient.configuration import Configuration as DmApiConfiguration
 from restclient.configuration import Configuration as MailhogConfiguration
 from services.api_mailhog import MailHogApi
 from services.dm_api_account import DmApiAccount
-
-structlog.configure(
-    processors=[
-        structlog.processors.JSONRenderer(
-            indent=4,
-            ensure_ascii=True,
-            # sort_keys=True,
-            # separators=(',', ':')
-        )
-    ]
-)
 
 
 @pytest.fixture(scope="session")

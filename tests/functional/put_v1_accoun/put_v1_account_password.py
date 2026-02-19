@@ -13,8 +13,8 @@ def test_change_password_v1_account(account_helper, prepare_user):
     # Меняем пароль
     response = account_helper.change_password(
         login=login,
-        password=password,
         email=email,
+        password=password,
         new_password=new_password
     )
 

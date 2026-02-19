@@ -1,5 +1,4 @@
 from requests import session, JSONDecodeError
-import structlog
 import uuid
 import curlify
 
@@ -12,7 +11,8 @@ class RestClient:
         self.set_headers(configuration.headers)
         self.disable_logs = configuration.disable_logs
         self.session = session()
-        self.log = structlog.get_logger(__name__).bind(service="api")  # логируем API
+        # Логгер убран, чтобы не зависеть от structlog в окружении тестов
+        self.log = None
 
     def set_headers(self, headers):
         if headers:
@@ -30,9 +30,9 @@ class RestClient:
     def delete(self, path, **kwargs):
         return self._send_request(method="DELETE", path=path, **kwargs)
 
-    # далее он будет использован в наследниках AccountApi и LoginApi, MailhogApi и т.д
     def _send_request(self, method, path, **kwargs):
-        log = self.log.bind(even_id=str(uuid.uuid4()))
+        # even_id используется для трассировки запроса
+        even_id = str(uuid.uuid4())
         full_url = self.host + path
 
         # вкл/откл логирование
@@ -40,15 +40,11 @@ class RestClient:
             rest_response = self.session.request(method=method, url=full_url, **kwargs)
             return rest_response
 
-        # настройка логирования Запроса
-        log.msg(
-            event="Request",
-            method=method,
-            full_url=full_url,
-            params=kwargs.get("params"),
-            headers=kwargs.get("headers"),
-            json=kwargs.get("json"),
-            data=kwargs.get("data"),
+        # настройка логирования Запроса (упрощённый вывод в консоль)
+        print(
+            f"[Request][{even_id}] method={method}, url={full_url}, "
+            f"params={kwargs.get('params')}, headers={kwargs.get('headers')}, "
+            f"json={kwargs.get('json')}, data={kwargs.get('data')}"
         )
 
         # настроиваем ответ и возвращаем его
@@ -58,11 +54,10 @@ class RestClient:
         curl = curlify.to_curl(rest_response.request)
         print(curl)
 
-        log.msg(
-            event="Response",
-            status_code=rest_response.status_code,
-            headers=rest_response.headers,
-            json=self._get_json(rest_response),
+        # логируем ответ (тоже через print, чтобы не требовать structlog)
+        print(
+            f"[Response][{even_id}] status_code={rest_response.status_code}, "
+            f"headers={rest_response.headers}, json={self._get_json(rest_response)}"
         )
 
         return rest_response
