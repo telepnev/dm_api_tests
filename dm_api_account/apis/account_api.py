@@ -1,6 +1,8 @@
 import requests
 
+from dm_api_account.models.change_email import ChangeEmail
 from dm_api_account.models.registration import Registration
+from dm_api_account.models.user_details_envelope import UserDetailsEnvelope
 from dm_api_account.models.user_envelope import UserEnvelope
 from restclient.client import RestClient
 
@@ -43,16 +45,33 @@ class AccountApi(RestClient):
         )
         return response
 
+    # def get_v1_account(self, **kwargs):
+    #     """
+    #     Get current user
+    #     :return:
+    #     """
+    #     response = self.get(
+    #         path=f'/v1/account',
+    #         **kwargs
+    #     )
+    #     return response
+
     def get_v1_account(self, **kwargs):
         """
-        Get current user
-        :return:
+        Get current user (raw response)
         """
-        response = self.get(
-            path=f'/v1/account',
+        return self.get(
+            path='/v1/account',
             **kwargs
         )
-        return response
+
+    def get_v1_account_dto(self, **kwargs) -> UserDetailsEnvelope:
+        """
+        Get current user as DTO
+        """
+        response = self.get_v1_account(**kwargs)
+
+        return UserDetailsEnvelope.model_validate(response.json())
 
     def put_v1_account_token(self, token, validate_response=True):
         """
@@ -71,7 +90,7 @@ class AccountApi(RestClient):
             return UserEnvelope(**response.json())
         return response
 
-    def put_v1_account_change_mail(self, json_data):
+    def put_v1_account_change_mail(self, change_mail: ChangeEmail):
         """
         Change registered user email
         :param json_data:
@@ -84,6 +103,6 @@ class AccountApi(RestClient):
         response = self.put(
             path=f'/v1/account/email',
             headers=headers,
-            json=json_data,
+            json=change_mail.model_dump(exclude_none=True, by_alias=True)
         )
         return response

@@ -1,9 +1,12 @@
+import json
+import re
 import time
 from functools import wraps
-from json import loads
+from json import loads, JSONDecodeError
 
-from requests import Response
+from requests import Response, JSONDecodeError
 
+from dm_api_account.models.change_email import ChangeEmail
 from dm_api_account.models.login_credentials import LoginCredentials
 from dm_api_account.models.registration import Registration
 from services.api_mailhog import MailHogApi
@@ -73,7 +76,7 @@ class AccountHelper:
 
         # Активация пользователя
         response = self.dm_account_api.account_api.put_v1_account_token(token=token)
-        #assert response.status_code == 200, "Пользователь не активирован"
+        # assert response.status_code == 200, "Пользователь не активирован"
 
         return response
 
@@ -114,24 +117,60 @@ class AccountHelper:
             })
         return response
 
-    @retry(retries=5, delay=15)
-    # старье
-    # @retry(stop_max_attempt_number=5,retry_on_result=retry_if_result_none, wait_fixed=1000)
-    # новое
-    # @retry(stop=stop_after_attempt(3), wait=wait_fixed(1))
-    def get_activation_token_by_login(self, login):
-        token = None
-        # Получить письма из почтового ящика
+    #  переписать на try , но позже
+    """
+        try:
+            user_data = json.loads(item['Content']['Body'])
+        except (JSONDecodeError, KeyError):
+        continue
+    """
+
+    @retry(retries=5, delay=5)
+    def get_activation_token_by_login(self, login: str):
+
         response = self.mailhog.mailhog_api.get_api_v2_messages()
+        messages = response.json().get("items", [])
 
-        for item in response.json()['items']:
-            user_data = loads(item['Content']['Body'])
-            user_login = user_data["Login"]
+        for item in messages:
+            body = item.get("Content", {}).get("Body", "")
 
-            if user_login == login:
-                print(f"Login {user_login}")
-                token = user_data.get("ConfirmationLinkUrl").split("/")[-1]
-        return token
+            # Пытаемся найти JSON внутри письма
+            try:
+                json_part = re.search(r"\{.*\}", body)
+                if not json_part:
+                    continue
+
+                user_data = json.loads(json_part.group())
+
+            except json.JSONDecodeError:
+                continue  # игнорируем невалидные письма
+
+            if user_data.get("Login") == login:
+                confirmation_url = user_data.get("ConfirmationLinkUrl")
+                if confirmation_url:
+                    return confirmation_url.split("/")[-1]
+
+        return None
+
+    # @retry(retries=5, delay=15)
+    # # старье
+    # # @retry(stop_max_attempt_number=5,retry_on_result=retry_if_result_none, wait_fixed=1000)
+    # # новое
+    # # @retry(stop=stop_after_attempt(3), wait=wait_fixed(1))
+    # def get_activation_token_by_login(self, login):
+
+    # token = None
+    # # Получить письма из почтового ящика
+    # response = self.mailhog.mailhog_api.get_api_v2_messages()
+    #
+    # for item in response.json()['items']:
+    #     user_data = loads(item['Content']['Body'])
+    #     user_login = user_data["Login"]
+    #
+    #     if user_login == login:
+    #         print(f"Login {user_login}")
+    #         token = user_data.get("ConfirmationLinkUrl").split("/")[-1]
+    # return token
 
     def get_conferm_token_by_login(self, login):
         token = None
@@ -188,17 +227,53 @@ class AccountHelper:
     @staticmethod
     def get_activation_token_by_email(email, response):
         token = None
-        for item in response.json()['items']:
-            user_data = loads(item['Content']['Body'])
-            emails = item['Content']['Headers']['To']
 
-            if email in emails:
-                token = user_data.get("ConfirmationLinkUrl").split("/")[-1]
+        for item in response.json().get('items', []):
+            try:
+                headers = item.get('Content', {}).get('Headers', {})
+                emails = headers.get('To', [])
+
+                # Сначала проверяем получателя
+                if email not in emails:
+                    continue
+
+                body = item.get('Content', {}).get('Body', '')
+
+                # Потом пробуем парсить JSON
+                user_data = loads(body)
+
+                confirmation_url = user_data.get("ConfirmationLinkUrl")
+                if confirmation_url:
+                    token = confirmation_url.split("/")[-1]
+                    break
+
+            except (JSONDecodeError, KeyError, AttributeError):
+                continue
 
         return token
 
+    # @staticmethod
+    # def get_activation_token_by_email(email, response):
+    #     token = None
+    #     for item in response.json()['items']:
+    #         try:
+    #             user_data = loads(item['Content']['Body'])
+    #             emails = item['Content']['Headers']['To']
+    #         except (JSONDecodeError, KeyError):
+    #             continue
+    #
+    #         if email in emails:
+    #             token = user_data.get("ConfirmationLinkUrl").split("/")[-1]
+    #
+    #     return token
+
     def get_current_user(self):
         response = self.dm_account_api.account_api.get_v1_account()
+        return response
+
+    # тест метода
+    def get_current_user_info(self):
+        response = self.dm_account_api.account_api.get_v1_account_dto()
         return response
 
     def logout(self, token: str | None = None, **kwargs) -> Response:
@@ -218,13 +293,13 @@ class AccountHelper:
     # Изменение почты
     def user_change_email(self, login: str, password: str, new_email: str):
         # Меняем емейл
-        json_data = {
-            "login": login,
-            "password": password,
-            "email": new_email
-        }
+        change_mail = ChangeEmail(
+            login=login,
+            password=password,
+            email= new_email
+        )
 
-        response = self.dm_account_api.account_api.put_v1_account_change_mail(json_data=json_data)
+        response = self.dm_account_api.account_api.put_v1_account_change_mail(change_mail=change_mail)
         # assert response.status_code == 200, f"Пользователю {login} не удалось изменить почту"
 
         return response
