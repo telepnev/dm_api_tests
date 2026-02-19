@@ -117,14 +117,21 @@ class AccountHelper:
         return response
 
     def auth_client(self, login: str, password: str):
-        response = self.user_login(login=login, password=password)
-        token = {
-            "x-dm-auth-token": response.headers["x-dm-auth-token"],
+        response, model, token = self.user_login(
+            login=login,
+            password=password
+        )
+
+        assert response.status_code == 200, "Login failed"
+        assert token is not None, "Token not received"
+
+        headers = {
+            "X-Dm-Auth-Token": token
         }
-        # устанавливаем в headers токен
-        self.dm_account_api.account_api.set_headers(token)
-        # логинемся
-        self.dm_account_api.login_api.set_headers(token)
+
+        self.dm_account_api.account_api.set_headers(headers)
+
+        return response
 
     def change_password(self,
                         login: str,
