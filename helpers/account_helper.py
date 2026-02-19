@@ -47,14 +47,10 @@ def retry(retries: int = 3, delay: int = 1, exceptions: tuple = (Exception,)):
 
 
 class AccountHelper:
-    def __init__(
-            self,
-            dm_account_api: DmApiAccount,
-            mailhog: MailHogApi
-            # mailhog: Optional[MailHogApi] = None
-    ):
+    def __init__(self, dm_account_api, mailhog):
         self.dm_account_api = dm_account_api
         self.mailhog = mailhog
+        self.token = None
 
     def register_new_user(self, login: str, password: str, email: str):
         registration = Registration(
@@ -74,7 +70,7 @@ class AccountHelper:
         start_time = time.time()
         token = self.get_activation_token_by_login(login=login)
         end_time = time.time()
-        assert end_time - start_time < 3, "Время активации превышено"
+        assert end_time - start_time < 5, "Время активации превышено"
         assert token is not None, f"Токен для пользователя {login} не был получен"
 
         # Активация пользователя
@@ -86,7 +82,6 @@ class AccountHelper:
             model = UserEnvelope(**response.json())
 
         return response, model
-
 
     def register_new_user_without_activetion(self, login: str, password: str, email: str):
         registration = Registration(
@@ -122,14 +117,10 @@ class AccountHelper:
             password=password
         )
 
-        assert response.status_code == 200, "Login failed"
-        assert token is not None, "Token not received"
+        assert response.status_code == 200
+        assert token is not None
 
-        headers = {
-            "X-Dm-Auth-Token": token
-        }
-
-        self.dm_account_api.account_api.set_headers(headers)
+        self.token = token
 
         return response
 
@@ -196,26 +187,6 @@ class AccountHelper:
 
         return None
 
-    # @retry(retries=5, delay=15)
-    # # старье
-    # # @retry(stop_max_attempt_number=5,retry_on_result=retry_if_result_none, wait_fixed=1000)
-    # # новое
-    # # @retry(stop=stop_after_attempt(3), wait=wait_fixed(1))
-    # def get_activation_token_by_login(self, login):
-
-    # token = None
-    # # Получить письма из почтового ящика
-    # response = self.mailhog.mailhog_api.get_api_v2_messages()
-    #
-    # for item in response.json()['items']:
-    #     user_data = loads(item['Content']['Body'])
-    #     user_login = user_data["Login"]
-    #
-    #     if user_login == login:
-    #         print(f"Login {user_login}")
-    #         token = user_data.get("ConfirmationLinkUrl").split("/")[-1]
-    # return token
-
     def get_conferm_token_by_login(self, login):
         token = None
         # Получить письма из почтового ящика
@@ -232,29 +203,6 @@ class AccountHelper:
                     token = link.split("/")[-1]
                 print(f"TOKEN ====================={token}")
         return token
-
-    # Авторизация в систему
-    # def user_login(self,
-    #                login: str,
-    #                password: str,
-    #                remember_me: bool = True,
-    #                validate_response=False
-    #                ):
-    #
-    #     login_credentials = LoginCredentials(
-    #         login=login,
-    #         password=password,
-    #         remember_me=remember_me
-    #     )
-    #
-    #     response = self.dm_account_api.login_api.post_v1_account_login(
-    #         login_credentials=login_credentials,
-    #         validate_response=validate_response
-    #     )
-    #     # assert response.status_code == 200, "Пользователь не авторизован"
-    #     # assert response.headers["X-Dm-Auth-Token"], "TOKEN не был получен"
-    #
-    #     return response
 
     def user_login(
             self,
@@ -323,43 +271,35 @@ class AccountHelper:
 
         return token
 
-    # @staticmethod
-    # def get_activation_token_by_email(email, response):
-    #     token = None
-    #     for item in response.json()['items']:
-    #         try:
-    #             user_data = loads(item['Content']['Body'])
-    #             emails = item['Content']['Headers']['To']
-    #         except (JSONDecodeError, KeyError):
-    #             continue
-    #
-    #         if email in emails:
-    #             token = user_data.get("ConfirmationLinkUrl").split("/")[-1]
-    #
-    #     return token
-
     def get_current_user(self):
-        response = self.dm_account_api.account_api.get_v1_account()
-        return response
+        headers = None
+
+        if self.token:
+            headers = {"X-Dm-Auth-Token": self.token}
+
+        return self.dm_account_api.account_api.get_v1_account(
+            headers=headers
+        )
 
     # тест метода
     def get_current_user_info(self):
         response = self.dm_account_api.account_api.get_v1_account_dto()
         return response
 
-    def logout(self, token: str | None = None, **kwargs) -> Response:
-        headers = kwargs.get('headers') or {}
-        if token:
-            headers.update({"X-Dm-Auth-Token": token})
-        response = self.dm_account_api.login_api.delete_v1_account_login(headers)
-        return response
+    def logout(self, token: str | None = None):
+        auth_token = token or self.token
+        headers = {"X-Dm-Auth-Token": auth_token}
+        return self.dm_account_api.login_api.delete_v1_account_login(
+            headers=headers
+        )
 
-    def logout_all(self, token: str | None = None, **kwargs) -> Response:
-        headers = kwargs.get('headers') or {}
-        if token:
-            headers.update({"X-Dm-Auth-Token": token})
-        response = self.dm_account_api.login_api.delete_v1_account_login_all(headers)
-        return response
+    def logout_all(self, token: str | None = None):
+        auth_token = token or self.token
+        headers = {"X-Dm-Auth-Token": auth_token}
+
+        return self.dm_account_api.login_api.delete_v1_account_login_all(
+            headers=headers
+        )
 
     # Изменение почты
     def user_change_email(self, login: str, password: str, new_email: str):

@@ -22,7 +22,7 @@ def test_put_v1_account_email_change(account_helper, prepare_user):
     )
 
     # Пытаемся войти по старой почте, получаем 403
-    response = account_helper.user_login(
+    response, model, token = account_helper.user_login(
         login=login,
         password=password
     )
@@ -32,7 +32,7 @@ def test_put_v1_account_email_change(account_helper, prepare_user):
     response = account_helper.email_change_confirmation_by_new_email(new_email=new_email)
 
     # логинемся
-    response = account_helper.user_login(
+    response, model, token = account_helper.user_login(
         login=login,
         password=password
     )

@@ -21,9 +21,10 @@ def test_change_password_v1_account(account_helper, prepare_user):
     assert response.status_code == 200
 
     # логинемся
-    response = account_helper.user_login(
+    login_response, login_model, token = account_helper.user_login(
         login=login,
         password=new_password
     )
 
-    assert response.status_code == 200
+    assert login_response.status_code == 200
+    assert token is not None

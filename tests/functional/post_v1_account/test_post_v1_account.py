@@ -7,16 +7,16 @@ def test_post_v1_account(account_helper, prepare_user):
     email = prepare_user.email
     password = prepare_user.password
 
-    response, user_model = account_helper.register_new_user(
+    response, model = account_helper.register_new_user(
         login=login,
         email=email,
         password=password
     )
 
     assert response.status_code == 200
-    assert user_model.resource.login == login
-    assert UserRole.GUEST in user_model.resource.roles
-    assert user_model.resource.registration is None
+    assert model.resource.login == login
+    assert UserRole.GUEST in model.resource.roles
+    assert model.resource.registration is None
 
 
 
