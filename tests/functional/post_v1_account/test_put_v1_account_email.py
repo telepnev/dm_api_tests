@@ -39,6 +39,4 @@ def test_put_v1_account_email_change(account_helper, prepare_user):
     assert response.status_code == 200, "Пользователь не авторизован"
 
 
-    # current_user = account_helper.get_current_user()
-    # print(f" ====================== {current_user}")
 

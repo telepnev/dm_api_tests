@@ -11,6 +11,7 @@ from dm_api_account.models.change_password import ChangePassword
 from dm_api_account.models.login_credentials import LoginCredentials
 from dm_api_account.models.registration import Registration
 from dm_api_account.models.reset_password import ResetPassword
+from dm_api_account.models.user_envelope import UserEnvelope
 from services.api_mailhog import MailHogApi
 from services.dm_api_account import DmApiAccount
 
@@ -79,6 +80,34 @@ class AccountHelper:
         # Активация пользователя
         response = self.dm_account_api.account_api.put_v1_account_token(token=token)
         # assert response.status_code == 200, "Пользователь не активирован"
+
+        return response
+
+    def register_new_user_without_activetion(self, login: str, password: str, email: str):
+        registration = Registration(
+            login=login,
+            password=password,
+            email=email
+        )
+        # Регистрация пользователя
+        response = self.dm_account_api.account_api.post_v1_account(registration=registration)
+        assert response.status_code == 201, f"Пользователь не был создан {response.text}"
+
+        # Получить письма из почтового ящика
+        response = self.mailhog.mailhog_api.get_api_v2_messages()
+        assert response.status_code == 200, "Письмо не получено"
+
+        # Получить активационный токен
+        start_time = time.time()
+        token = self.get_activation_token_by_login(login=login)
+        end_time = time.time()
+        assert end_time - start_time < 3, "Время активации превышено"
+        assert token is not None, f"Токен для пользователя {login} не был получен"
+
+        return response
+
+    def activate_user_by_token(self, token: str):
+        response = self.dm_account_api.account_api.put_v1_account_token(token=token)
 
         return response
 
@@ -306,3 +335,11 @@ class AccountHelper:
         # assert response.status_code == 200, f"Пользователю {login} не удалось изменить почту"
 
         return response
+
+    def activate_user_by_token(self, token: str):
+        response = self.dm_account_api.account_api.put_v1_account_token(token)
+        # для проверок на статус коды, если все ок  вернем DTO, нет то json
+        model = None
+        if response.status_code == 200:
+            model = UserEnvelope(**response.json())
+        return response, model

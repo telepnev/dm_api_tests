@@ -3,7 +3,6 @@ from dm_api_account.models.change_password import ChangePassword
 from dm_api_account.models.registration import Registration
 from dm_api_account.models.reset_password import ResetPassword
 from dm_api_account.models.user_details_envelope import UserDetailsEnvelope
-from dm_api_account.models.user_envelope import UserEnvelope
 from restclient.client import RestClient
 
 
@@ -45,17 +44,6 @@ class AccountApi(RestClient):
         )
         return response
 
-    # def get_v1_account(self, **kwargs):
-    #     """
-    #     Get current user
-    #     :return:
-    #     """
-    #     response = self.get(
-    #         path=f'/v1/account',
-    #         **kwargs
-    #     )
-    #     return response
-
     def get_v1_account(self, **kwargs):
         """
         Get current user (raw response)
@@ -73,22 +61,32 @@ class AccountApi(RestClient):
 
         return UserDetailsEnvelope.model_validate(response.json())
 
-    def put_v1_account_token(self, token, validate_response=True):
-        """
-        Activate registered user
-        :param token:
-        :return:
-        """
-        headers = {
-            'accept': 'text/plain',
-        }
+    # def put_v1_account_token(self, token, validate_response=True):
+    #     """
+    #     Activate registered user
+    #     :param token:
+    #     :return:
+    #     """
+    #     headers = {
+    #         'accept': 'text/plain',
+    #     }
+    #     response = self.put(
+    #         path=f'/v1/account/{token}',
+    #         headers=headers
+    #     )
+    #     if validate_response:
+    #         return UserEnvelope(**response.json())
+    #     return response
+
+    def put_v1_account_token(self, token: str):
+        headers = {'accept': 'application/json'}
+
         response = self.put(
             path=f'/v1/account/{token}',
             headers=headers
         )
-        if validate_response:
-            return UserEnvelope(**response.json())
-        return response
+
+        return response  # ВСЕГДА raw Response
 
     def put_v1_account_change_mail(self, change_mail: ChangeEmail):
         """

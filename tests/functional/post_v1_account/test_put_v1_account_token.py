@@ -1,88 +1,46 @@
 import pytest
-from faker import Faker
-
-from helpers.account_helper import AccountHelper
-from restclient.configuration import Configuration as DmApiConfiguration
-from restclient.configuration import Configuration as MailhogConfiguration
-from services.api_mailhog import MailHogApi
-from services.dm_api_account import DmApiAccount
 
 
 @pytest.mark.parametrize(
-    "token_modifier, expected_status",
+    "token_type, expected_status",
     [
-        pytest.param("valid", 200),
-        pytest.param("invalid", 400),
-        pytest.param("empty", 404),
-    ],
+        ("valid", 200),
+        ("invalid", 400),
+        ("empty", 404),
+    ]
 )
-def test_put_v1_account_activation(token_modifier, expected_status):
-    dm_api_configuration = DmApiConfiguration(host="http://185.185.143.231:5051", disable_logs=True)
-    mailhog_configuration = MailhogConfiguration(host="http://185.185.143.231:5025", disable_logs=True)
+def test_put_v1_account_activation(
+        token_type,
+        expected_status,
+        account_helper,
+        prepare_user
+):
 
-    account = DmApiAccount(configuration=dm_api_configuration)
-    mailhog = MailHogApi(configuration=mailhog_configuration)
+    login = prepare_user.login
+    password = prepare_user.password
+    email = prepare_user.email
 
-    account_helper = AccountHelper(dm_account_api=account, mailhog=mailhog)
+    account_helper.register_new_user_without_activetion(
+        login=login,
+        email=email,
+        password=password
+    )
 
-    faker = Faker()
-    login = faker.name().replace(" ", "")
-    email = f"{login}@mail.com"
-    password = "12345678"
+    valid_token = account_helper.get_activation_token_by_login(login)
 
-    #  регистрация
-    response = account_helper.register_new_user(login=login, email=email, password=password)
-    assert response.status_code == 200
-
-    # нужен ли отдельный метод?? И где его оставить и как сделать
-    # получение списка писем
-    # response = mailhog.mailhogApi_api.get_api_v2_messages()
-    # assert response.status_code == 200
-    #
-    # valid_token = account_helper.get_activation_token_by_login(login=login, response=response)
-
-    valid_token = account_helper.get_activation_token_by_login(login=login)
-    assert valid_token is not None
-
-    #  подготовка токена
-    if token_modifier == "valid":
+    if token_type == "valid":
         token = valid_token
-    elif token_modifier == "invalid":
+    elif token_type == "invalid":
         token = "invalid-token-123"
-    elif token_modifier == "empty":
+    else:
         token = ""
 
-    #  активация
-    response = account.account_api.put_v1_account_token(token=token)
+    response, user_model = account_helper.activate_user_by_token(token)
+
     assert response.status_code == expected_status
 
-
-# def test_change_password_v1_account(account_helper, prepare_user):
-#     login = prepare_user.login
-#     password = prepare_user.password
-#     email = prepare_user.email
-#     new_password = prepare_user.new_password
-#
-#     # Регистрирую нового пользователя
-#     account_helper.register_new_user(
-#         login=login,
-#         email=email,
-#         password=password
-#     )
-#     # Меняем пароль
-#     response = account_helper.change_password(
-#         login=login,
-#         password=password,
-#         email=email,
-#         new_password=new_password
-#     )
-#
-#     assert response.status_code == 200
-#
-#     # логинемся
-#     response = account_helper.user_login(
-#         login=login,
-#         password=new_password
-#     )
-#
-#     assert response.status_code == 200
+    if expected_status == 200:
+        assert user_model is not None
+        assert user_model.resource.login == login
+    else:
+        assert user_model is None
