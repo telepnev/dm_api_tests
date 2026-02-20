@@ -1,16 +1,8 @@
+import uuid
 from collections import namedtuple
-import sys
-from pathlib import Path
 
 import pytest
-import uuid
-
 from faker import Faker
-
-# Добавляем корень проекта в sys.path, чтобы корректно находить внутренние пакеты
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
 
 from helpers.account_helper import AccountHelper
 from restclient.configuration import Configuration as DmApiConfiguration
@@ -89,8 +81,6 @@ def auth_with_cred_account_helper(mailhog_api):
         return account_helper
 
     return _auth
-
-    # def get_current_user
 
 
 @pytest.fixture(scope="function")

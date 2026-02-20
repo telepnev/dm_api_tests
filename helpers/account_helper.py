@@ -314,11 +314,6 @@ class AccountHelper:
             headers=headers
         )
 
-    # тест метода
-    def get_current_user_info(self):
-        response = self.dm_account_api.account_api.get_v1_account_dto()
-        return response
-
     def logout(self, token: str | None = None):
         auth_token = token or self.token
         headers = {"X-Dm-Auth-Token": auth_token}

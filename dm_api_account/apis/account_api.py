@@ -1,12 +1,14 @@
 from dm_api_account.models.change_email import ChangeEmail
+from dm_api_account.models.change_password import ChangePassword
+from dm_api_account.models.login_credentials import LoginCredentials
 from dm_api_account.models.registration import Registration
-from dm_api_account.models.user_details_envelope import UserDetailsEnvelope
+from dm_api_account.models.reset_password import ResetPassword
 from restclient.client import RestClient
 
 
 class AccountApi(RestClient):
 
-    def post_v1_account(self, registration: Registration):
+    def post_v1_account(self, registration: Registration, **kwargs):
         """
         Register new user
         :param json_data:
@@ -14,23 +16,12 @@ class AccountApi(RestClient):
         """
         response = self.post(
             path=f'/v1/account',
-            json=registration.model_dump(exclude_none=True, by_alias=True)
-        )
-        return response
-
-    def post_v1_account_password(self, **kwargs):
-        """
-        Reset registered user password
-        :param
-        :return:
-        """
-        response = self.post(
-            path=f'/v1/account/password',
+            json=registration.model_dump(exclude_none=True, by_alias=True),
             **kwargs)
 
         return response
 
-    def put_v1_account_password(self, **kwargs):
+    def put_v1_account_password(self, change_password: ChangePassword, **kwargs):
         """
         Change registered user password
         :param
@@ -38,11 +29,12 @@ class AccountApi(RestClient):
         """
         response = self.put(
             path=f'/v1/account/password',
+            json=change_password.model_dump(exclude_none=True, by_alias=True),
             **kwargs
         )
         return response
 
-    def get_v1_account(self, **kwargs):
+    def get_v1_account(self,validate_reponse=True, **kwargs):
         """
         Get current user
         """
@@ -52,14 +44,6 @@ class AccountApi(RestClient):
         )
 
         return response
-
-    def get_v1_account_dto(self, **kwargs):
-        """
-        Get current user as DTO
-        """
-        response = self.get_v1_account(**kwargs)
-
-        return UserDetailsEnvelope.model_validate(response.json())
 
     def put_v1_account_token(self, token: str):
         headers = {'accept': 'application/json'}
@@ -71,7 +55,21 @@ class AccountApi(RestClient):
 
         return response
 
-    def put_v1_account_mail(self, change_mail: ChangeEmail):
+    def post_v1_account_password(self, reset_password: ResetPassword, **kwargs):
+        """
+        Reset registered user password
+        :param
+        :return:
+        """
+        response = self.post(
+            path=f'/v1/account/password',
+            json=reset_password.model_dump(exclude_none=True, by_alias=True),
+            **kwargs
+        )
+
+        return response
+
+    def put_v1_account_mail(self, change_mail: ChangeEmail, **kwargs):
         """
         Change registered user email
         :param json_data:
@@ -84,17 +82,15 @@ class AccountApi(RestClient):
         response = self.put(
             path=f'/v1/account/email',
             headers=headers,
-            json=change_mail.model_dump(exclude_none=True, by_alias=True)
+            json=change_mail.model_dump(exclude_none=True, by_alias=True),
+            **kwargs
         )
         return response
 
-    def post_v1_account_login(self, login: str, password: str):
+    def post_v1_account_login(self, login_credentials: LoginCredentials, **kwargs):
         response = self.post(
             path="/v1/account/login",
-            json={
-                "login": login,
-                "password": password,
-                "rememberMe": True
-            }
+            json=login_credentials.model_dump(exclude_none=True, by_alias=True),
+            **kwargs
         )
         return response
