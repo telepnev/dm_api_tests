@@ -24,5 +24,3 @@ class LoginCredentials(BaseModel):
         description="Remember me flag",
         serialization_alias="rememberMe"
     )
-
-    # remember_me: bool = Field(..., description="Remember me", serialization_alias="rememberMe")

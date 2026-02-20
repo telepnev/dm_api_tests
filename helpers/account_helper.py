@@ -1,16 +1,18 @@
 import json
 import re
 import time
+from dataclasses import dataclass
 from functools import wraps
 from json import loads, JSONDecodeError
 
-from requests import JSONDecodeError
+from requests import JSONDecodeError, Response
 
 from dm_api_account.models.change_email import ChangeEmail
 from dm_api_account.models.change_password import ChangePassword
 from dm_api_account.models.login_credentials import LoginCredentials
 from dm_api_account.models.registration import Registration
 from dm_api_account.models.reset_password import ResetPassword
+from dm_api_account.models.user_details_envelope import UserDetailsEnvelope
 from dm_api_account.models.user_envelope import UserEnvelope
 
 
@@ -44,6 +46,12 @@ def retry(retries: int = 3, delay: int = 1, exceptions: tuple = (Exception,)):
     return decorator
 
 
+@dataclass
+class ApiResult:
+    response: Response
+    data: UserDetailsEnvelope | None = None
+
+
 class AccountHelper:
     def __init__(self, dm_account_api, mailhog):
         self.dm_account_api = dm_account_api
@@ -73,41 +81,12 @@ class AccountHelper:
 
         # Активация пользователя
         response = self.dm_account_api.account_api.put_v1_account_token(token=token)
-        # assert response.status_code == 200, "Пользователь не активирован"
 
         model = None
         if response.status_code == 200:
             model = UserEnvelope(**response.json())
 
         return response, model
-
-    def register_new_user_without_activetion(self, login: str, password: str, email: str):
-        registration = Registration(
-            login=login,
-            password=password,
-            email=email
-        )
-        # Регистрация пользователя
-        response = self.dm_account_api.account_api.post_v1_account(registration=registration)
-        assert response.status_code == 201, f"Пользователь не был создан {response.text}"
-
-        # Получить письма из почтового ящика
-        response = self.mailhog.mailhog_api.get_api_v2_messages()
-        assert response.status_code == 200, "Письмо не получено"
-
-        # Получить активационный токен
-        start_time = time.time()
-        token = self.get_activation_token_by_login(login=login)
-        end_time = time.time()
-        assert end_time - start_time < 3, "Время активации превышено"
-        assert token is not None, f"Токен для пользователя {login} не был получен"
-
-        return response
-
-    def activate_user_by_token(self, token: str):
-        response = self.dm_account_api.account_api.put_v1_account_token(token=token)
-
-        return response
 
     def auth_client(self, login: str, password: str):
         response, model, token = self.user_login(
@@ -235,7 +214,6 @@ class AccountHelper:
                 link = user_data.get("ConfirmationLinkUri")
                 if link:
                     token = link.split("/")[-1]
-                print(f"TOKEN ====================={token}")
         return token
 
     def user_login(
@@ -272,7 +250,6 @@ class AccountHelper:
         assert token is not None, f"Токен не найден {new_email}"
         # Активируем этот токен
         response = self.dm_account_api.account_api.put_v1_account_token(token=token)
-        # assert response.status_code == 200, "Пользователь не активирован"
 
         return response
 
@@ -304,7 +281,7 @@ class AccountHelper:
 
         return token
 
-    def get_current_user(self):
+    def get_current_user_raw(self):
         headers = None
 
         if self.token:
@@ -313,6 +290,14 @@ class AccountHelper:
         return self.dm_account_api.account_api.get_v1_account(
             headers=headers
         )
+
+    def get_current_user(self) -> UserDetailsEnvelope:
+        response = self.get_current_user_raw()
+
+        if response.status_code != 200:
+            raise RuntimeError(f"Unexpected status: {response.status_code}")
+
+        return UserDetailsEnvelope.model_validate(response.json())
 
     def logout(self, token: str | None = None):
         auth_token = token or self.token
@@ -337,14 +322,33 @@ class AccountHelper:
         )
 
         response = self.dm_account_api.account_api.put_v1_account_mail(change_mail=change_mail)
-        # assert response.status_code == 200, f"Пользователю {login} не удалось изменить почту"
 
         return response
 
-    def activate_user_by_token(self, token: str):
-        response = self.dm_account_api.account_api.put_v1_account_token(token)
-        # для проверок на статус коды, если все ок  вернем DTO, нет то json
-        model = None
-        if response.status_code == 200:
-            model = UserEnvelope(**response.json())
-        return response, model
+    def activate_user_by_token_raw(self, token: str):
+        return self.dm_account_api.account_api.put_v1_account_token(token)
+
+    def activate_user_by_token(self, token: str) -> UserEnvelope:
+        response = self.activate_user_by_token_raw(token)
+
+        if response.status_code != 200:
+            raise RuntimeError(f"Activation failed: {response.status_code}")
+
+        return UserEnvelope.model_validate(response.json())
+
+    def register_user(self, login: str, password: str, email: str):
+        registration = Registration(
+            login=login,
+            password=password,
+            email=email
+        )
+
+        response = self.dm_account_api.account_api.post_v1_account(
+            registration=registration
+        )
+
+        assert response.status_code == 201
+        return response
+
+    def make_token_invalid(token: str) -> str:
+        return token[:-1] + ("0" if token[-1] != "0" else "1")
