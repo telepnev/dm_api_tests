@@ -4,7 +4,7 @@ import time
 from functools import wraps
 from json import loads, JSONDecodeError
 
-from requests import Response, JSONDecodeError
+from requests import JSONDecodeError
 
 from dm_api_account.models.change_email import ChangeEmail
 from dm_api_account.models.change_password import ChangePassword
@@ -12,8 +12,6 @@ from dm_api_account.models.login_credentials import LoginCredentials
 from dm_api_account.models.registration import Registration
 from dm_api_account.models.reset_password import ResetPassword
 from dm_api_account.models.user_envelope import UserEnvelope
-from services.api_mailhog import MailHogApi
-from services.dm_api_account import DmApiAccount
 
 
 def retry_if_result_none(result):
@@ -124,66 +122,102 @@ class AccountHelper:
 
         return response
 
-    def change_password(self,
-                        login: str,
-                        email: str,
-                        password: str,
-                        new_password: str
-                        ):
-        # логинемся
-        response = self.dm_account_api.login_api.post_v1_account_login(
-            login_credentials=LoginCredentials(login=login, password=password))
-        # инициируем сброс пароля
-        reset_password = ResetPassword(login=login, email=email)
-        response = self.dm_account_api.account_api.post_v1_account_reset_password(
-            reset_password=reset_password)
-        assert response.status_code == 200, "Пользователь не смог сбросить пароль"
-        # берем токен из письма
-        token = self.get_conferm_token_by_login(login=login)
-        assert token is not None, "Не смогли получить token"
+    def reset_password(self, login: str, email: str):
+        """
+        Initiate password reset flow
+        """
+        payload = ResetPassword(
+            login=login,
+            email=email
+        ).model_dump(exclude_none=True, by_alias=True)
 
-        # меняем пароль
-        response = self.dm_account_api.account_api.put_v1_account_change_password(
-            change_password=ChangePassword(
-                login=login,
-                token=token,
-                old_password=password,
-                new_password=new_password
-            ))
+        response = self.dm_account_api.account_api.post_v1_account_password(
+            json=payload
+        )
+
         return response
 
-    #  переписать на try , но позже
-    """
-        try:
-            user_data = json.loads(item['Content']['Body'])
-        except (JSONDecodeError, KeyError):
-        continue
-    """
+    def change_password_by_token(
+            self,
+            login: str,
+            token: str,
+            old_password: str,
+            new_password: str
+    ):
+        """
+        Change user password using confirmation token
+        """
+        payload = ChangePassword(
+            login=login,
+            token=token,
+            old_password=old_password,
+            new_password=new_password
+        ).model_dump(exclude_none=True, by_alias=True)
+
+        response = self.dm_account_api.account_api.put_v1_account_password(
+            json=payload
+        )
+
+        return response
+
+    def change_password(
+            self,
+            login: str,
+            email: str,
+            old_password: str,
+            new_password: str
+    ):
+        # Arrange
+        response = self.reset_password(login=login, email=email)
+        assert response.status_code == 200
+
+        token = self.get_conferm_token_by_login(login)
+        assert token is not None
+
+        # Act
+        response = self.change_password_by_token(
+            login=login,
+            token=token,
+            old_password=old_password,
+            new_password=new_password
+        )
+
+        return response
 
     @retry(retries=5, delay=5)
-    def get_activation_token_by_login(self, login: str):
-
+    def get_activation_token_by_login(self, login: str) -> str | None:
+        """
+        Extract activation token from MailHog by user login.
+        Retries if token not found.
+        """
         response = self.mailhog.mailhog_api.get_api_v2_messages()
         messages = response.json().get("items", [])
 
         for item in messages:
-            body = item.get("Content", {}).get("Body", "")
+            body = item.get("Content", {}).get("Body")
 
-            # Пытаемся найти JSON внутри письма
+            if not body:
+                continue
+
+            # Ищем JSON в теле письма (lazy match)
+            json_match = re.search(r"\{.*?\}", body)
+            if not json_match:
+                continue
+
             try:
-                json_part = re.search(r"\{.*\}", body)
-                if not json_part:
-                    continue
+                user_data = json.loads(json_match.group())
+            except (json.JSONDecodeError, TypeError):
+                continue
 
-                user_data = json.loads(json_part.group())
+            # Проверяем логин
+            if user_data.get("Login") != login:
+                continue
 
-            except json.JSONDecodeError:
-                continue  # игнорируем невалидные письма
+            confirmation_url = user_data.get("ConfirmationLinkUrl")
+            if not confirmation_url:
+                continue
 
-            if user_data.get("Login") == login:
-                confirmation_url = user_data.get("ConfirmationLinkUrl")
-                if confirmation_url:
-                    return confirmation_url.split("/")[-1]
+            return confirmation_url.split("/")[-1]
 
         return None
 
@@ -216,7 +250,6 @@ class AccountHelper:
             remember_me=remember_me
         )
 
-        # ВСЕГДА получаем raw Response
         response = self.dm_account_api.login_api.post_v1_account_login(
             login_credentials=login_credentials,
             validate_response=False

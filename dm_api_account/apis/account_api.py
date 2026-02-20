@@ -1,7 +1,5 @@
 from dm_api_account.models.change_email import ChangeEmail
-from dm_api_account.models.change_password import ChangePassword
 from dm_api_account.models.registration import Registration
-from dm_api_account.models.reset_password import ResetPassword
 from dm_api_account.models.user_details_envelope import UserDetailsEnvelope
 from restclient.client import RestClient
 
@@ -20,7 +18,7 @@ class AccountApi(RestClient):
         )
         return response
 
-    def post_v1_account_reset_password(self, reset_password: ResetPassword):
+    def post_v1_account_password(self, **kwargs):
         """
         Reset registered user password
         :param
@@ -28,11 +26,11 @@ class AccountApi(RestClient):
         """
         response = self.post(
             path=f'/v1/account/password',
-            json=reset_password.model_dump(exclude_none=True, by_alias=True)
-        )
+            **kwargs)
+
         return response
 
-    def put_v1_account_change_password(self, change_password: ChangePassword):
+    def put_v1_account_password(self, **kwargs):
         """
         Change registered user password
         :param
@@ -40,7 +38,7 @@ class AccountApi(RestClient):
         """
         response = self.put(
             path=f'/v1/account/password',
-            json=change_password.model_dump(exclude_none=True, by_alias=True)
+            **kwargs
         )
         return response
 
@@ -53,7 +51,7 @@ class AccountApi(RestClient):
             **kwargs
         )
 
-    def get_v1_account_dto(self, **kwargs) -> UserDetailsEnvelope:
+    def get_v1_account_dto(self, **kwargs):
         """
         Get current user as DTO
         """
@@ -99,4 +97,3 @@ class AccountApi(RestClient):
             }
         )
         return response
-
