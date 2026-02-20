@@ -1,43 +1,23 @@
-import structlog
-from faker import Faker
-
-from helpers.account_helper import AccountHelper
-from restclient.configuration import Configuration as DmApiConfiguration
-from restclient.configuration import Configuration as MailhogConfiguration
-from services.api_mailhog import MailHogApi
-from services.dm_api_account import DmApiAccount
-
-structlog.configure(
-    processors=[
-        structlog.processors.JSONRenderer(
-            indent=4,
-            ensure_ascii=True,
-            # sort_keys=True,
-            # separators=(',', ':')
-        )
-    ]
-)
+from dm_api_account.models.user_envelope import UserRole
 
 
-def test_post_v1_account():
-    dm_api_configuration = DmApiConfiguration(host="http://185.185.143.231:5051", disable_logs=False)
-    mailhog_configuration = MailhogConfiguration(host="http://185.185.143.231:5025", disable_logs=True)
+def test_post_v1_account(account_helper, prepare_user):
 
-    account = DmApiAccount(configuration=dm_api_configuration)
-    mailhog = MailHogApi(configuration=mailhog_configuration)
+    login = prepare_user.login
+    email = prepare_user.email
+    password = prepare_user.password
 
-    account_helper = AccountHelper(dm_account_api=account, mailhog=mailhog)
-
-    faker = Faker()
-    login = faker.name().replace(" ", "")
-    email = f"{login}@mail.com"
-    password = "12345678"
-
-    account_helper.register_new_user(
+    response, model = account_helper.register_new_user(
         login=login,
         email=email,
         password=password
     )
-    account_helper.user_login(
-        login=login,
-        password=password)
+
+    assert response.status_code == 200
+    assert model.resource.login == login
+    assert UserRole.GUEST in model.resource.roles
+    assert model.resource.registration is None
+
+
+
+
