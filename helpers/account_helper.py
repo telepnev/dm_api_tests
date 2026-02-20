@@ -341,7 +341,7 @@ class AccountHelper:
             email=new_email
         )
 
-        response = self.dm_account_api.account_api.put_v1_account_change_mail(change_mail=change_mail)
+        response = self.dm_account_api.account_api.put_v1_account_mail(change_mail=change_mail)
         # assert response.status_code == 200, f"Пользователю {login} не удалось изменить почту"
 
         return response

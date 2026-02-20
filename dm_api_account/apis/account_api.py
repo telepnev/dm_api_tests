@@ -44,12 +44,14 @@ class AccountApi(RestClient):
 
     def get_v1_account(self, **kwargs):
         """
-        Get current user (raw response)
+        Get current user
         """
-        return self.get(
+        response = self.get(
             path='/v1/account',
             **kwargs
         )
+
+        return response
 
     def get_v1_account_dto(self, **kwargs):
         """
@@ -69,7 +71,7 @@ class AccountApi(RestClient):
 
         return response
 
-    def put_v1_account_change_mail(self, change_mail: ChangeEmail):
+    def put_v1_account_mail(self, change_mail: ChangeEmail):
         """
         Change registered user email
         :param json_data:
@@ -86,7 +88,6 @@ class AccountApi(RestClient):
         )
         return response
 
-    # можно удалить
     def post_v1_account_login(self, login: str, password: str):
         response = self.post(
             path="/v1/account/login",
